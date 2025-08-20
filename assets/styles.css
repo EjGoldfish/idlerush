@@ -1,0 +1,33 @@
+:root{
+  --bg1:#0f1226; --bg2:#11182e; --panel:#171d36; --panel2:#0d1428;
+  --text:#e7ecf4; --muted:#9fb2c9; --accent:#7cf7a9; --accent2:#7cb8f7; --gold:#ffd166;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  color:var(--text); background: radial-gradient(1000px 700px at 20% 0%, var(--bg2), var(--bg1));
+}
+.wrap{ width:min(1100px, 100%); padding:16px; margin:0 auto; }
+
+.site-header{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.brand h1{ margin:0 0 6px; font-size:28px; }
+.muted{ color:var(--muted); }
+
+.actions{ display:flex; gap:8px; align-items:center; }
+.search{ padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); background:var(--panel2); color:var(--text); width:240px; }
+.select{ padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); background:var(--panel2); color:var(--text); }
+
+.grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:14px; }
+.card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.16)); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+
+.game-card{ display:flex; flex-direction:column; gap:10px; }
+.game-thumb{ width:100%; aspect-ratio:16/9; border-radius:12px; background:#0b1026 center/cover no-repeat; border:1px solid rgba(255,255,255,.08); }
+.game-title{ font-weight:800; letter-spacing:.3px; }
+.game-meta{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tag{ font-size:12px; color:#0b1026; background:var(--accent); padding:4px 8px; border-radius:999px; }
+.ghost{ background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:10px 12px; cursor:pointer; }
+.primary{ background:var(--accent); color:#0b1020; border:none; border-radius:10px; padding:10px 12px; cursor:pointer; font-weight:700; box-shadow:0 8px 20px rgba(124,247,169,.25); }
+.button-row{ display:flex; gap:8px; }
+
+.footer{ text-align:center; color:var(--muted); margin:24px 0; }

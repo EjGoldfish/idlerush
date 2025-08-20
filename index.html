@@ -1,12 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Page Title</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IdleRush</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css" />
+  <meta name="theme-color" content="#0f1226"/>
+  <!-- AdSense loader (production) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
 </head>
 <body>
+  <header class="site-header wrap">
+    <div class="brand">
+      <h1>🎮 IdleRush</h1>
+      <p class="muted">Pick a game below. More titles added regularly.</p>
+    </div>
+    <div class="actions">
+      <input id="search" class="search" type="search" placeholder="Search games…" aria-label="Search games" />
+      <select id="sort" class="select">
+        <option value="recent">Sort: Most recent</option>
+        <option value="alpha">Sort: A → Z</option>
+        <option value="plays">Sort: Most played</option>
+      </select>
+    </div>
+  </header>
 
-<h1>My First Heading</h1>
-<p>My first paragraph.</p>
+  <main class="wrap">
+    <section id="gamesGrid" class="grid"></section>
 
+    <!-- Home page banner ad slot -->
+    <div class="card" style="margin-top:16px">
+      <ins class="adsbygoogle"
+           style="display:block; display:block"
+           data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+           data-ad-slot="6369998382"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </main>
+
+  <footer class="wrap footer">
+    <div>© <span id="year"></span> IdleRush · <a href="privacy.html">Privacy</a></div>
+  </footer>
+
+  <!-- Inline manifest so the launcher works from file:// too -->
+  <script id="gamesManifest" type="application/json">
+  [
+    {
+      "id": "sst",
+      "title": "Sweet Spot Tycoon",
+      "path": "games/sweet-spot-tycoon/index.html",
+      "thumbnail": "games/sweet-spot-tycoon/cover.png",
+      "description": "Timing + idle upgrades + prestige. Nail the green arc to build your empire.",
+      "tags": ["Arcade","Idle"],
+      "released": "2025-08-18",
+      "plays": 0
+    }
+  ]
+  </script>
+
+  <script src="assets/app.js"></script>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>
 </html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Sweet Spot Tycoon</title>
+  <style>
+    :root{
+      --bg1:#0f1226; --bg2:#11182e; --accent:#7cf7a9; --accent2:#7cb8f7; --danger:#ff6b6b; --gold:#ffd166;
+      --text:#e7ecf4; --muted:#9fb2c9; --panel:#171d36; --panel2:#0d1428; --good:#53e69d; --perfect:#00ffc3;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 0%, var(--bg2), var(--bg1)); color:var(--text);
+      display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:12px;
+    }
+    .wrap{ width:min(980px, 100%); padding:12px; box-sizing:border-box; }
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.1));
+      border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:10px 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+      backdrop-filter: blur(6px);
+    }
+    .stat{ display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--panel2); border:1px solid rgba(255,255,255,0.06); border-radius:12px; }
+    .stat b{ font-size:18px; }
+    .pill{ font-size:12px; color:var(--muted); }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; }
+    canvas{ width:100%; height:auto; background: radial-gradient(600px 400px at 50% 48%, #0b1026, #060a18); border-radius:18px; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 40px rgba(0,0,0,0.4); cursor:pointer; }
+    .controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+    .btn{ appearance:none; border:none; color:#0b1020; background:var(--accent); font-weight:700; padding:12px 16px; border-radius:12px; cursor:pointer; transition:transform .07s ease, filter .2s ease; box-shadow:0 8px 20px rgba(124,247,169,.25); }
+    .btn.secondary{ background:#dbeafe; color:#0a1020; }
+    .btn.ghost{ background:transparent; color:var(--text); border:1px solid rgba(255,255,255,0.12); box-shadow:none; }
+    .btn:hover{ filter:brightness(1.05); }
+    .btn:active{ transform:translateY(1px) scale(.99); }
+
+    .panels{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px; }
+    @media (max-width:880px){ .panels{ grid-template-columns: 1fr; } }
+
+    .card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.16)); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+    .card h3{ margin:0 0 8px; font-size:16px; color:#cfe6ff; letter-spacing:.3px; }
+    .upgrade{ display:flex; align-items:center; justify-content:space-between; padding:10px; margin:8px 0; background:var(--panel2); border:1px solid rgba(255,255,255,0.06); border-radius:12px; gap:10px; }
+    .upgrade small{ color:var(--muted); display:block; }
+    .upgrade .left{ max-width:66%; }
+    .cost{ color:var(--gold); font-weight:700; }
+    .danger{ color:var(--danger); }
+
+    .notice{ background: #0f1b3a; border:1px dashed rgba(124,184,247,0.5); padding:10px; border-radius:12px; color:#cde0ff; }
+    .link{ color:#9cd0ff; text-decoration:underline; cursor:pointer; }
+    .muted{ color:var(--muted); }
+
+    .bar{ height:10px; background:#0a1228; border:1px solid rgba(255,255,255,0.06); border-radius:999px; overflow:hidden; }
+    .fill{ height:100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); width:0%; transition: width .25s ease; }
+
+    .shoprow{ display:flex; gap:8px; align-items:center; }
+
+    .footer{ text-align:center; color:var(--muted); font-size:12px; margin:14px 0 22px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="stat"><span>💰</span><div><div class="pill">Cash</div><b id="cash">0</b></div></div>
+      <div class="stat"><span>🔥</span><div><div class="pill">Streak</div><b id="streak">0</b></div></div>
+      <div class="stat"><span>📐</span><div><div class="pill">Blueprints</div><b id="blueprints">0</b></div></div>
+      <div class="stat"><span>💎</span><div><div class="pill">Multiplier</div><b id="mult">x1.00</b></div></div>
+      <div class="stat"><span>⚡</span><div><div class="pill">Fever</div>
+        <div class="bar" style="width:150px"><div id="feverFill" class="fill"></div></div>
+      </div></div>
+    </header>
+
+    <main>
+      <canvas id="game" width="1000" height="700" title="Click / tap when the pointer enters the green arc!"></canvas>
+      <div class="controls">
+        <button class="btn" id="tapBtn">TAP (Space)</button>
+        <button class="btn ghost" id="moveArcBtn">Shuffle Target</button>
+        <button class="btn secondary" id="saveBtn">Save</button>
+        <button class="btn ghost" id="resetBtn">Hard Reset</button>
+      </div>
+
+      <!-- Responsive display ad below the game -->
+      <div class="card" style="margin-top:8px">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-8507587807963539"
+             data-ad-slot="6369998382"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+
+      <section class="panels">
+        <div class="card">
+          <h3>Upgrades</h3>
+          <div id="upgrades"></div>
+        </div>
+        <div class="card">
+          <h3>Meta</h3>
+          <div class="upgrade notice">
+            <div class="left">
+              <b>Daily Boost</b>
+              <small>Claim once per day. Grants +15 minutes of offline earnings instantly.</small>
+            </div>
+            <div>
+              <button class="btn" id="dailyBtn">Claim</button>
+            </div>
+          </div>
+
+          <div class="upgrade">
+            <div class="left">
+              <b>Prestige: Convert to Blueprints</b>
+              <small>Reset upgrades for <span id="prestigeBlueprints">0</span> <b>Blueprints</b>. Each blueprint gives +15% permanent earnings multiplier.</small>
+            </div>
+            <div class="shoprow">
+              <div class="muted" id="prestigeReq">Need $100,000 to prestige.</div>
+              <button class="btn" id="prestigeBtn">Prestige</button>
+            </div>
+          </div>
+
+          <div class="upgrade">
+            <div class="left">
+              <b>Import / Export Save</b>
+              <small>Copy your save to back it up or move devices.</small>
+            </div>
+            <div class="shoprow">
+              <button class="btn ghost" id="exportBtn">Export</button>
+              <button class="btn ghost" id="importBtn">Import</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <div class="footer">Tip: perfect hits fill Fever; during Fever all hits pay <b>+100%</b> and pointer speeds up. Shuffle target to keep it spicy.</div>
+    </main>
+  </div>
+
+  <!-- Google AdSense loader (banner ads only) -->
+  <script async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8507587807963539"
+    crossorigin="anonymous"></script>
+
+  <script>
+  // ===
+  // Sweet Spot Tycoon — single-file game
+  // Tap timing + idle/upgrade loop + prestige + offline earnings.
+  // ===
+
+  const $ = sel => document.querySelector(sel);
+  const fmt = n => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+  const state = {
+    cash: 0,
+    bestCash: 0,
+    totalEarned: 0,
+    streak: 0,
+    bestStreak: 0,
+    fever: 0, // 0..100
+    feverOn: false,
+    blueprints: 0,
+    lastActive: Date.now(),
+    muted: false,
+    upgrades: {
+      payout: 0,        // + base payout
+      target: 0,        // target arc wider (each level widens by 2 degrees)
+      speed: 0,         // pointer speed +
+      offline: 0,       // offline earnings/min
+      mult: 0           // soft multiplier
+    }
+  };
+
+  const base = {
+    payout: 5,
+    targetDeg: 40,
+    speed: 1.1, // radians per second base
+    feverFillPerPerfect: 22,
+    feverDrain: 20, // per second
+    feverBonus: 1.0, // +100% = x2 total (we'll add on top of mult)
+    prestigeReq: 100000
+  };
+
+  const costs = {
+    payout: l => Math.floor(50 * Math.pow(1.22, l)),
+    target: l => Math.floor(120 * Math.pow(1.25, l)),
+    speed:  l => Math.floor(150 * Math.pow(1.28, l)),
+    offline:l => Math.floor(80  * Math.pow(1.21, l)),
+    mult:   l => Math.floor(500 * Math.pow(1.40, l))
+  };
+
+  const desc = {
+    payout: 'Increase base hit payout.',
+    target: 'Widen the green target arc.',
+    speed: 'Increase pointer speed (more hits / min).',
+    offline: 'Earn cash while away (per min).',
+    mult: 'Increase global earnings multiplier.'
+  };
+
+  // Game / canvas
+  const canvas = $('#game');
+  const ctx = canvas.getContext('2d');
+  let W = canvas.width, H = canvas.height;
+  let centerX = W/2, centerY = H/2; let radius = Math.min(W,H)*0.28;
+
+  // Pointer & target state
+  let angle = 0; // radians
+  let targetStart = -0.6; // radians
+  let targetSize = deg2rad(base.targetDeg);
+  let lastTime = performance.now();
+
+  // Audio
+  const audio = {
+    ctx: null,
+    unlocked: false
+  };
+  function unlockAudio(){ if(!audio.ctx){ audio.ctx = new (window.AudioContext||window.webkitAudioContext)(); audio.unlocked = true; } }
+  function beep(freq=440, dur=0.06, vol=0.03){
+    if(!audio.ctx || state.muted) return;
+    const t = audio.ctx.currentTime;
+    const osc = audio.ctx.createOscillator(); const g = audio.ctx.createGain();
+    osc.type = 'triangle'; osc.frequency.value = freq; g.gain.value = vol; osc.connect(g); g.connect(audio.ctx.destination);
+    osc.start(t); osc.stop(t+dur);
+  }
+
+  function deg2rad(d){ return d*Math.PI/180; }
+
+  function effectiveTargetSize(){
+    const widen = state.upgrades.target * deg2rad(2);
+    let s = targetSize + widen;
+    return Math.min(s, deg2rad(140));
+  }
+
+  function pointerSpeed(){
+    const s = base.speed + state.upgrades.speed * 0.12;
+    return state.feverOn ? s*1.5 : s;
+  }
+
+  function globalMultiplier(){
+    const soft = 1 + state.upgrades.mult * 0.08; // +8% per level
+    const prestige = 1 + state.blueprints * 0.15; // +15% each
+    const fever = state.feverOn ? (1+base.feverBonus) : 1; // +100%
+    return soft * prestige * fever;
+  }
+
+  function basePayout(){ return base.payout + state.upgrades.payout*3; }
+
+  function shuffleTarget(){
+    targetStart = Math.random()*Math.PI*2 - Math.PI; // any angle
+  }
+
+  function isWithin(angle, start, size){
+    function norm(a){ while(a>Math.PI) a-=Math.PI*2; while(a<-Math.PI) a+=Math.PI*2; return a; }
+    const s = norm(start), e = norm(start+size), a = norm(angle);
+    if(s<=e) return a>=s && a<=e;
+    return a>=s || a<=e;
+  }
+
+  function tap(manual=true){
+    unlockAudio();
+    const size = effectiveTargetSize();
+    const perfectWindow = size*0.28; // central region
+    const center = targetStart + size/2;
+    const dist = Math.abs(Math.atan2(Math.sin(angle-center), Math.cos(angle-center)));
+    const isHit = isWithin(angle, targetStart, size);
+    if(isHit){
+      const perfect = dist <= perfectWindow/2;
+      const payout = basePayout() * (perfect?2.5:1.0) * (1 + state.streak*0.05);
+      const earn = payout * globalMultiplier();
+      state.cash += earn; state.totalEarned += earn; state.streak++; state.bestStreak = Math.max(state.bestStreak, state.streak);
+      if(perfect){
+        state.fever = Math.min(100, state.fever + base.feverFillPerPerfect);
+        beep(880, .05, .04);
+      } else { beep(640, .035, .03); }
+      if(state.fever>=100){ state.feverOn = true; }
+      shuffleTarget();
+    } else {
+      state.streak = 0; state.feverOn = false; state.fever = Math.max(0, state.fever-10);
+      beep(200, .08, .025);
+    }
+    state.bestCash = Math.max(state.bestCash, state.cash);
+    flashHit(isHit);
+    updateUI();
+    save();
+  }
+
+  // Simple hit flash
+  let flash = 0; let flashGood = true;
+  function flashHit(good){ flash = 1; flashGood = good; }
+
+  // Main loop
+  function loop(ts){
+    const dt = Math.min((ts - lastTime)/1000, 0.05); lastTime = ts;
+
+    angle += pointerSpeed() * dt; if(angle>Math.PI) angle -= Math.PI*2;
+
+    if(state.feverOn){
+      state.fever -= base.feverDrain * dt; if(state.fever<=0){ state.fever=0; state.feverOn=false; }
+    } else if(state.fever>0){ state.fever = Math.max(0, state.fever - base.feverDrain*0.35*dt); }
+
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function draw(){
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth; const cssH = Math.floor(cssW*0.7);
+    if(canvas.height!==cssH*dpr){ canvas.width = cssW*dpr; canvas.height = cssH*dpr; }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    W = canvas.clientWidth; H = Math.floor(W*0.7); centerX = W/2; centerY = H/2; radius = Math.min(W,H)*0.28;
+
+    ctx.clearRect(0,0,W,H);
+
+    // Background glow
+    const g = ctx.createRadialGradient(centerX, centerY, radius*0.1, centerX, centerY, radius*1.3);
+    g.addColorStop(0, 'rgba(124,247,169,0.05)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+    // Base ring
+    ctx.lineWidth = radius*0.22; ctx.strokeStyle = '#09122c'; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI*2); ctx.stroke();
+
+    // Target arc
+    const size = effectiveTargetSize();
+    ctx.strokeStyle = 'rgba(0,255,195,0.85)';
+    ctx.shadowColor = 'rgba(0,255,195,0.35)'; ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(centerX, centerY, radius, targetStart, targetStart+size); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Pointer
+    const px = centerX + Math.cos(angle)*radius; const py = centerY + Math.sin(angle)*radius;
+    ctx.lineWidth = radius*0.24; ctx.strokeStyle = 'rgba(124,184,247,0.35)';
+    ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(px, py); ctx.stroke();
+
+    // Pointer tip
+    ctx.fillStyle = state.feverOn? 'rgba(255, 209, 102, 0.95)' : 'rgba(124, 184, 247, 0.95)';
+    ctx.beginPath(); ctx.arc(px, py, radius*0.08, 0, Math.PI*2); ctx.fill();
+
+    // Center disc
+    ctx.fillStyle = '#0c1432'; ctx.beginPath(); ctx.arc(centerX, centerY, radius*0.58, 0, Math.PI*2); ctx.fill();
+
+    // Streak + multiplier text
+    ctx.fillStyle = '#cfe6ff'; ctx.textAlign='center';
+    ctx.font = `bold ${Math.floor(radius*0.25)}px system-ui`;
+    ctx.fillText('x'+(globalMultiplier()* (1 + state.streak*0.05)).toFixed(2), centerX, centerY-6);
+
+    ctx.font = `600 ${Math.floor(radius*0.12)}px system-ui`;
+    ctx.fillStyle = '#9fb2c9';
+    ctx.fillText(`streak ${state.streak}`, centerX, centerY + radius*0.22);
+
+    // Flash overlay
+    if(flash>0){
+      ctx.fillStyle = flashGood? 'rgba(0,255,195,'+ (0.18*flash) +')' : 'rgba(255,60,60,'+ (0.12*flash) +')';
+      ctx.fillRect(0,0,W,H); flash -= 0.06; if(flash<0) flash=0;
+    }
+  }
+
+  // UI wiring
+  $('#tapBtn').addEventListener('click', () => tap(true));
+  $('#moveArcBtn').addEventListener('click', () => { shuffleTarget(); updateUI(); });
+  $('#saveBtn').addEventListener('click', save);
+  $('#resetBtn').addEventListener('click', () => { if(confirm('Hard reset all progress?')){ localStorage.removeItem('sst_save'); location.reload(); } });
+
+  document.addEventListener('keydown', (e)=>{ if(e.code==='Space'){ e.preventDefault(); tap(true); } });
+  canvas.addEventListener('pointerdown', ()=> tap(true));
+  canvas.addEventListener('pointerdown', unlockAudio, { once:true });
+
+  // Upgrades UI
+  const upgradeList = [
+    ['payout', 'Payout +$3/level'],
+    ['target', 'Target +2°/level'],
+    ['speed', 'Speed +0.12 rad/s/level'],
+    ['offline','Offline +$2/min/level'],
+    ['mult',  'Global +8%/level']
+  ];
+
+  function renderUpgrades(){
+    const root = $('#upgrades'); root.innerHTML='';
+    for(const [key, short] of upgradeList){
+      const lvl = state.upgrades[key];
+      const cost = costs[key](lvl);
+      const aff = key==='offline'? `+$${2* (lvl+1)}/min` : short;
+      const can = state.cash >= cost;
+      const row = document.createElement('div'); row.className='upgrade';
+      row.innerHTML = `
+        <div class="left">
+          <b>${label(key)} &nbsp;<span class="muted">Lv.${lvl}</span></b>
+          <small>${desc[key]} <span class="muted">(${aff})</span></small>
+        </div>
+        <div>
+          <div class="cost">$${fmt(cost)}</div>
+          <button class="btn ${can?'':'ghost'}" data-key="${key}">Buy</button>
+        </div>`;
+      row.querySelector('button').addEventListener('click', ()=> buyUpgrade(key));
+      root.appendChild(row);
+    }
+  }
+
+  function label(k){
+    return {
+      payout:'Payout', target:'Target Size', speed:'Pointer Speed', offline:'Offline Income', mult:'Global Mult'
+    }[k] || k;
+  }
+
+  function buyUpgrade(key){
+    const lvl = state.upgrades[key]; const cost = costs[key](lvl);
+    if(state.cash < cost) return beep(180,.08,.02);
+    state.cash -= cost; state.upgrades[key]++;
+    updateUI(); save(); beep(720,.05,.03);
+  }
+
+  // Prestige
+  function calcBlueprintsForPrestige(){
+    if(state.cash < base.prestigeReq) return 0;
+    const extra = Math.floor(Math.log10(Math.max(1, state.cash/base.prestigeReq))); // 1 per decade above req
+    return 1 + Math.max(0, extra);
+  }
+
+  function prestige(){
+    const bp = calcBlueprintsForPrestige();
+    if(bp<=0){ alert('Earn at least $'+fmt(base.prestigeReq)+' to prestige.'); return; }
+    if(!confirm(`Prestige for ${bp} Blueprints? This resets cash & upgrades, but boosts earnings forever.`)) return;
+    state.blueprints += bp; state.cash = 0; state.streak=0; state.fever=0; state.feverOn=false;
+    for(const k in state.upgrades) state.upgrades[k]=0;
+    updateUI(); save();
+  }
+
+  // Daily boost
+  function dailyKey(){ return 'sst_daily_'+ new Date().toISOString().slice(0,10); }
+  function claimDaily(){
+    if(localStorage.getItem(dailyKey())){ alert('Already claimed today.'); return; }
+    const perMin = 2* state.upgrades.offline; // $2/min per level
+    const grant = perMin * 15 * globalMultiplier();
+    state.cash += grant; state.totalEarned += grant; localStorage.setItem(dailyKey(),'1');
+    updateUI(); save(); alert('Daily Boost: +$'+fmt(grant));
+  }
+
+  // Offline earnings
+  function grantOffline(){
+    const now = Date.now(); const diffMin = Math.floor((now - state.lastActive)/60000);
+    if(diffMin<=0) return; const perMin = 2* state.upgrades.offline * globalMultiplier();
+    const cap = 60 * 8; // cap 8 hours
+    const mins = Math.min(diffMin, cap);
+    const grant = perMin * mins;
+    if(grant>0){ state.cash += grant; state.totalEarned += grant; toast(`💤 Offline: +$${fmt(grant)} (${mins} min)`); }
+  }
+
+  // Save system
+  function save(){ state.lastActive = Date.now(); localStorage.setItem('sst_save', btoa(unescape(encodeURIComponent(JSON.stringify(state))))); }
+  function load(){ const s = localStorage.getItem('sst_save'); if(!s) return; try{ const obj = JSON.parse(decodeURIComponent(escape(atob(s)))); Object.assign(state, obj); }catch(e){ console.warn('load fail',e); }}
+
+  function exportSave(){ const s = localStorage.getItem('sst_save') || ''; navigator.clipboard.writeText(s).then(()=> toast('Copied save to clipboard.')); }
+  function importSave(){ const code = prompt('Paste your save code:'); if(!code) return; try{ localStorage.setItem('sst_save', code); location.reload(); }catch(e){ alert('Invalid save.'); } }
+
+  // Tiny toast
+  let toastDiv; function toast(msg){
+    if(!toastDiv){ toastDiv = document.createElement('div'); document.body.appendChild(toastDiv); toastDiv.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#0f1b3a;color:#cde0ff;border:1px solid rgba(255,255,255,0.14);padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:9;opacity:0;transition:opacity .2s'; }
+    toastDiv.textContent = msg; toastDiv.style.opacity='1'; setTimeout(()=> toastDiv.style.opacity='0', 1800);
+  }
+
+  // UI updates
+  function updateUI(){
+    $('#cash').textContent = '$'+fmt(state.cash);
+    $('#streak').textContent = state.streak;
+    $('#blueprints').textContent = state.blueprints;
+    $('#mult').textContent = 'x'+globalMultiplier().toFixed(2);
+    $('#feverFill').style.width = state.fever+'%';
+    renderUpgrades();
+
+    const req = base.prestigeReq; $('#prestigeReq').textContent = state.cash>=req? 'Ready!' : `Need $${fmt(req)} to prestige.`;
+    $('#prestigeBlueprints').textContent = calcBlueprintsForPrestige();
+  }
+
+  // Buttons
+  $('#prestigeBtn').addEventListener('click', prestige);
+  $('#dailyBtn').addEventListener('click', claimDaily);
+  $('#exportBtn').addEventListener('click', exportSave);
+  $('#importBtn').addEventListener('click', importSave);
+
+  // Init
+  load();
+  grantOffline();
+  updateUI();
+  shuffleTarget();
+  requestAnimationFrame((t)=>{ lastTime=t; loop(t); });
+
+  // Persist lastActive when leaving
+  window.addEventListener('beforeunload', save);
+
+  // Expose minimal helper for debugging
+  window.__dev = { state };
+  </script>
+</body>
+</html>
