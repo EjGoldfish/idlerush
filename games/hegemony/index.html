@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Hegemony — IdleRush</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0c0b09;
+  --bg2:       #111008;
+  --bg3:       #161410;
+  --surface:   #1c1a14;
+  --surface2:  #242118;
+  --border:    rgba(220,200,150,0.08);
+  --border2:   rgba(220,200,150,0.18);
+  --border3:   rgba(220,200,150,0.32);
+  --text:      #e8e0cc;
+  --muted:     #7a7060;
+  --dim:       #4a4535;
+  --cream:     #f0e8d0;
+  --gold:      #c8a84a;
+  --red:       #c03828;
+  --blue:      #3868a8;
+  --green:     #3a7848;
+  --teal:      #2a7870;
+  --orange:    #b85820;
+  --font-d:    'Bebas Neue', sans-serif;
+  --font-s:    'Libre Baskerville', serif;
+  --font-m:    'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-s);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+a    { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* Parchment grain */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 160px;
+  opacity: 0.03;
+  pointer-events: none; z-index: 0;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+/* ═══════════════════════════════
+   MASTHEAD
+═══════════════════════════════ */
+.masthead {
+  position: relative; z-index: 10;
+  display: flex; align-items: stretch;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--gold);
+  flex-shrink: 0;
+  min-height: 52px;
+}
+.masthead-brand {
+  display: flex; align-items: center;
+  padding: 0 20px;
+  border-right: 1px solid var(--border2);
+  gap: 12px; flex-shrink: 0;
+}
+.back-link {
+  font-family: var(--font-m); font-size: 10px; color: var(--dim);
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 3px 8px; letter-spacing: 0.06em;
+  transition: color .15s, border-color .15s;
+}
+.back-link:hover { color: var(--text); border-color: var(--border2); }
+.brand-title {
+  font-family: var(--font-d); font-size: 28px;
+  letter-spacing: 0.12em; color: var(--cream);
+  line-height: 1;
+}
+.brand-sub {
+  font-family: var(--font-m); font-size: 9px;
+  letter-spacing: 0.18em; color: var(--gold);
+  text-transform: uppercase; margin-top: 1px;
+}
+
+/* STAT BAR */
+.stat-bar {
+  flex: 1; display: flex; align-items: stretch;
+}
+.stat-cell {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 6px 8px;
+  border-right: 1px solid var(--border);
+  position: relative; overflow: hidden;
+  cursor: default;
+  transition: background .15s;
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell:hover { background: rgba(200,168,74,0.04); }
+
+/* Animated fill bar at bottom of each stat */
+.stat-cell::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0;
+  height: 2px;
+  transition: width .8s ease;
+  width: var(--pct, 0%);
+}
+.stat-cell[data-stat="economy"]::after   { background: var(--gold); }
+.stat-cell[data-stat="military"]::after  { background: var(--red); }
+.stat-cell[data-stat="diplomacy"]::after { background: var(--blue); }
+.stat-cell[data-stat="culture"]::after   { background: var(--teal); }
+.stat-cell[data-stat="technology"]::after{ background: var(--green); }
+
+.stat-icon { font-size: 13px; line-height: 1; margin-bottom: 2px; }
+.stat-name {
+  font-family: var(--font-m); font-size: 8px;
+  letter-spacing: 0.14em; color: var(--muted);
+  text-transform: uppercase;
+}
+.stat-val {
+  font-family: var(--font-d); font-size: 18px;
+  line-height: 1.1; letter-spacing: 0.04em;
+}
+.stat-delta {
+  font-family: var(--font-m); font-size: 8px;
+  margin-top: 1px;
+}
+.stat-delta.up   { color: #5aa86a; }
+.stat-delta.down { color: var(--red); }
+.stat-delta.zero { color: var(--dim); }
+
+/* Masthead right */
+.masthead-right {
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-end;
+  padding: 0 16px; flex-shrink: 0;
+  border-left: 1px solid var(--border2);
+  gap: 2px;
+}
+.era-display {
+  font-family: var(--font-d); font-size: 16px;
+  letter-spacing: 0.1em; color: var(--gold); line-height: 1;
+}
+.year-display {
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--muted); letter-spacing: 0.06em;
+}
+.prestige-pips {
+  display: flex; gap: 3px; margin-top: 2px;
+}
+.pip {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--dim);
+}
+.pip.lit { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
+
+/* ═══════════════════════════════
+   LAYOUT — 3 columns
+═══════════════════════════════ */
+.layout {
+  flex: 1; display: grid;
+  grid-template-columns: 260px 1fr 270px;
+  overflow: hidden; position: relative; z-index: 1;
+}
+
+/* ═══════════════════════════════
+   LEFT — POLICIES
+═══════════════════════════════ */
+.col {
+  display: flex; flex-direction: column;
+  overflow: hidden; border-right: 1px solid var(--border);
+}
+.col:last-child { border-right: none; border-left: 1px solid var(--border); }
+
+.col-header {
+  padding: 10px 14px 9px;
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+.col-title {
+  font-family: var(--font-d); font-size: 15px;
+  letter-spacing: 0.14em; color: var(--cream);
+  display: flex; align-items: center; gap: 8px;
+}
+.col-title-line {
+  flex: 1; height: 1px; background: var(--border2);
+}
+.col-sub {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--dim); letter-spacing: 0.1em;
+  margin-top: 3px;
+}
+
+.col-scroll {
+  flex: 1; overflow-y: auto; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.col-scroll::-webkit-scrollbar { width: 3px; }
+
+/* POLICY CARD */
+.policy-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 11px 12px;
+  position: relative; overflow: hidden;
+  transition: border-color .15s;
+}
+.policy-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.policy-card.enacted::before  { background: var(--gold); }
+.policy-card.available::before{ background: var(--dim); }
+
+.policy-card.available { cursor: pointer; }
+.policy-card.available:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+}
+.policy-card.enacted {
+  border-color: rgba(200,168,74,0.2);
+  background: rgba(200,168,74,0.04);
+}
+.policy-card.locked { opacity: 0.3; cursor: not-allowed; }
+
+.policy-header {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; margin-bottom: 5px;
+}
+.policy-name {
+  font-family: var(--font-s); font-style: italic;
+  font-size: 13px; font-weight: 700; color: var(--cream);
+  line-height: 1.2;
+}
+.policy-era {
+  font-family: var(--font-m); font-size: 8px;
+  color: var(--dim); letter-spacing: 0.1em;
+  flex-shrink: 0; margin-left: 6px;
+  text-transform: uppercase;
+}
+.policy-desc {
+  font-size: 11px; color: var(--muted);
+  line-height: 1.5; margin-bottom: 7px;
+}
+.policy-effects {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-bottom: 7px;
+}
+.effect-tag {
+  font-family: var(--font-m); font-size: 9px;
+  padding: 2px 6px; border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+.eff-pos  { background: rgba(58,120,72,0.18);  color: #6ab87a; border: 1px solid rgba(58,120,72,0.25); }
+.eff-neg  { background: rgba(192,56,40,0.15);  color: #d06858; border: 1px solid rgba(192,56,40,0.22); }
+.eff-neu  { background: rgba(200,168,74,0.1);  color: var(--gold); border: 1px solid rgba(200,168,74,0.18); }
+
+.policy-cost {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--dim); letter-spacing: 0.06em;
+}
+.policy-cost span { color: var(--gold); }
+
+.policy-actions { display: flex; gap: 6px; margin-top: 8px; }
+.p-btn {
+  flex: 1; padding: 5px 8px;
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 0.08em; border-radius: 3px;
+  transition: all .12s;
+  border: 1px solid var(--border2);
+}
+.p-btn-enact {
+  background: rgba(200,168,74,0.1); color: var(--gold);
+  border-color: rgba(200,168,74,0.25);
+}
+.p-btn-enact:hover:not(:disabled) {
+  background: rgba(200,168,74,0.2);
+  border-color: var(--border3);
+}
+.p-btn-repeal {
+  background: rgba(192,56,40,0.08); color: var(--red);
+  border-color: rgba(192,56,40,0.2);
+}
+.p-btn-repeal:hover:not(:disabled) { background: rgba(192,56,40,0.15); }
+.p-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Policy slots */
+.slots-display {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--dim); letter-spacing: 0.08em;
+  padding: 6px 10px; text-align: center;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.slots-display span { color: var(--gold); }
+
+/* ═══════════════════════════════
+   CENTER — MAP + EVENTS
+═══════════════════════════════ */
+.center-col {
+  display: flex; flex-direction: column;
+  overflow: hidden; background: var(--bg);
+}
+.center-tabs {
+  display: flex; border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+.c-tab {
+  padding: 10px 18px;
+  font-family: var(--font-d); font-size: 12px;
+  letter-spacing: 0.14em; color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+  cursor: pointer;
+}
+.c-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.c-tab:hover  { color: var(--text); }
+
+.center-body {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.center-body::-webkit-scrollbar { width: 3px; }
+
+/* MAP */
+.map-wrap { position: relative; }
+canvas#worldmap {
+  width: 100%; border-radius: 4px;
+  border: 1px solid var(--border2);
+  display: block;
+}
+.map-legend {
+  display: flex; gap: 12px; margin-top: 8px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--muted); letter-spacing: 0.06em;
+}
+.legend-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* RIVALS */
+.rivals-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.rival-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 12px;
+  transition: border-color .15s;
+}
+.rival-card:hover { border-color: var(--border2); }
+.rival-card.at-war  { border-color: rgba(192,56,40,0.3); background: rgba(192,56,40,0.04); }
+.rival-card.allied  { border-color: rgba(56,104,168,0.3); background: rgba(56,104,168,0.04); }
+.rival-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.rival-name {
+  font-family: var(--font-s); font-style: italic;
+  font-size: 13px; font-weight: 700; color: var(--cream);
+}
+.rival-flag { font-size: 16px; }
+.rival-relation {
+  font-family: var(--font-m); font-size: 8px;
+  letter-spacing: 0.1em; padding: 2px 6px;
+  border-radius: 2px; text-transform: uppercase;
+}
+.rel-hostile  { background: rgba(192,56,40,0.15);  color: var(--red);  border: 1px solid rgba(192,56,40,0.2); }
+.rel-neutral  { background: rgba(200,168,74,0.1);   color: var(--muted); border: 1px solid var(--border); }
+.rel-friendly { background: rgba(56,104,168,0.15); color: #7aabe0; border: 1px solid rgba(56,104,168,0.2); }
+.rel-allied   { background: rgba(56,104,168,0.25); color: #a0c8f0; border: 1px solid rgba(56,104,168,0.35); }
+.rel-war      { background: rgba(192,56,40,0.25);  color: #e07060; border: 1px solid rgba(192,56,40,0.35); }
+
+.rival-stats {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 3px; margin-bottom: 8px;
+}
+.rival-stat { text-align: center; }
+.rival-stat-val {
+  font-family: var(--font-m); font-size: 11px;
+  color: var(--text); line-height: 1;
+}
+.rival-stat-key {
+  font-size: 8px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  font-family: var(--font-m);
+}
+
+.rival-btns { display: flex; gap: 5px; }
+.r-btn {
+  flex: 1; padding: 4px 5px;
+  font-family: var(--font-m); font-size: 9px;
+  letter-spacing: 0.06em; border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--muted); background: var(--bg2);
+  transition: all .12s; cursor: pointer;
+}
+.r-btn:hover:not(:disabled) { border-color: var(--border2); color: var(--text); }
+.r-btn.danger:hover { border-color: rgba(192,56,40,0.4); color: var(--red); background: rgba(192,56,40,0.08); }
+.r-btn.ally:hover   { border-color: rgba(56,104,168,0.4); color: #7aabe0;  background: rgba(56,104,168,0.08); }
+.r-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* EVENTS */
+.event-banner {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 4px solid var(--gold);
+  border-radius: 4px; padding: 14px 16px;
+  animation: slideIn .25s ease;
+}
+@keyframes slideIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
+.event-banner.crisis     { border-left-color: var(--red); }
+.event-banner.opportunity{ border-left-color: var(--green); }
+.event-banner.diplomatic { border-left-color: var(--blue); }
+
+.event-kicker {
+  font-family: var(--font-d); font-size: 10px;
+  letter-spacing: 0.18em; color: var(--gold);
+  margin-bottom: 5px; text-transform: uppercase;
+}
+.event-banner.crisis      .event-kicker { color: var(--red); }
+.event-banner.opportunity .event-kicker { color: #6ab87a; }
+.event-banner.diplomatic  .event-kicker { color: #7aabe0; }
+
+.event-headline {
+  font-family: var(--font-s); font-size: 15px;
+  font-weight: 700; color: var(--cream);
+  line-height: 1.3; margin-bottom: 6px;
+}
+.event-body {
+  font-size: 12px; color: var(--muted);
+  line-height: 1.6; margin-bottom: 12px;
+  font-style: italic;
+}
+.event-choices { display: flex; flex-direction: column; gap: 6px; }
+.e-choice {
+  padding: 8px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  text-align: left; color: var(--text);
+  font-size: 12px; line-height: 1.4;
+  transition: all .12s; cursor: pointer;
+}
+.e-choice:hover {
+  border-color: var(--border2);
+  background: var(--surface);
+  color: var(--cream);
+}
+.e-choice .choice-outcome {
+  display: block; margin-top: 3px;
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--dim);
+}
+
+/* VICTORY PATHS */
+.victory-section { display: flex; flex-direction: column; gap: 8px; }
+.victory-path {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 12px;
+}
+.vp-header {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 5px;
+}
+.vp-name {
+  font-family: var(--font-s); font-size: 13px;
+  font-weight: 700; font-style: italic; color: var(--cream);
+  display: flex; align-items: center; gap: 6px;
+}
+.vp-pct {
+  font-family: var(--font-d); font-size: 16px; color: var(--gold);
+}
+.vp-bar { height: 5px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+.vp-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.vp-desc {
+  font-size: 10px; color: var(--dim); margin-top: 5px;
+  font-family: var(--font-m); letter-spacing: 0.04em;
+}
+
+/* VICTORY MODAL */
+.victory-modal {
+  position: fixed; inset: 0;
+  background: rgba(12,11,9,0.92);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500;
+  backdrop-filter: blur(4px);
+}
+.victory-box {
+  background: var(--bg2);
+  border: 1px solid var(--gold);
+  border-top: 4px solid var(--gold);
+  padding: 40px 48px;
+  max-width: 520px; width: 90%;
+  text-align: center;
+  animation: victoryIn .4s ease;
+}
+@keyframes victoryIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
+.victory-type {
+  font-family: var(--font-d); font-size: 13px;
+  letter-spacing: 0.2em; color: var(--gold);
+  margin-bottom: 10px;
+}
+.victory-title {
+  font-family: var(--font-s); font-size: 28px;
+  font-weight: 700; color: var(--cream);
+  line-height: 1.2; margin-bottom: 12px;
+}
+.victory-desc {
+  font-size: 13px; color: var(--muted);
+  line-height: 1.7; font-style: italic;
+  margin-bottom: 24px;
+}
+.victory-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-bottom: 24px;
+}
+.v-stat { text-align: center; }
+.v-stat-val { font-family: var(--font-d); font-size: 22px; color: var(--gold); }
+.v-stat-label { font-family: var(--font-m); font-size: 9px; color: var(--muted); letter-spacing: 0.1em; }
+.v-btn {
+  padding: 12px 28px;
+  background: rgba(200,168,74,0.1);
+  border: 1px solid rgba(200,168,74,0.35);
+  color: var(--gold);
+  font-family: var(--font-d); font-size: 15px;
+  letter-spacing: 0.12em; border-radius: 3px;
+  transition: all .15s; cursor: pointer;
+}
+.v-btn:hover { background: rgba(200,168,74,0.2); box-shadow: 0 0 20px rgba(200,168,74,0.15); }
+
+/* ═══════════════════════════════
+   RIGHT — INTEL / ADVISORS
+═══════════════════════════════ */
+.intel-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.i-tab {
+  flex: 1; padding: 8px 5px;
+  font-family: var(--font-m); font-size: 8px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--dim); background: none;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s; cursor: pointer;
+}
+.i-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ADVISORS */
+.advisor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 11px;
+  margin-bottom: 8px; position: relative;
+}
+.advisor-card.speaking {
+  border-color: rgba(200,168,74,0.3);
+  animation: advisorPulse 2s ease-in-out infinite;
+}
+@keyframes advisorPulse {
+  0%,100% { box-shadow: 0 0 0 rgba(200,168,74,0); }
+  50%     { box-shadow: 0 0 10px rgba(200,168,74,0.1); }
+}
+.advisor-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px;
+}
+.advisor-avatar { font-size: 20px; flex-shrink: 0; }
+.advisor-name {
+  font-family: var(--font-s); font-size: 12px;
+  font-weight: 700; font-style: italic; color: var(--cream);
+}
+.advisor-title {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--muted); letter-spacing: 0.06em;
+}
+.advisor-quote {
+  font-size: 11px; color: var(--muted);
+  line-height: 1.55; font-style: italic;
+  border-left: 2px solid var(--border2);
+  padding-left: 8px;
+}
+
+/* LEDGER */
+.ledger-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-m); font-size: 10px;
+}
+.ledger-row:last-child { border-bottom: none; }
+.ledger-label { color: var(--muted); letter-spacing: 0.06em; }
+.ledger-val   { color: var(--text); }
+.ledger-val.pos { color: #6ab87a; }
+.ledger-val.neg { color: var(--red); }
+.ledger-section-header {
+  font-family: var(--font-d); font-size: 11px;
+  letter-spacing: 0.14em; color: var(--dim);
+  padding: 8px 0 4px; text-transform: uppercase;
+}
+
+/* DISPATCH LOG */
+.dispatch-entry {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--muted);
+  line-height: 1.5;
+  animation: entryFade .2s ease;
+}
+@keyframes entryFade { from { opacity:0; } to { opacity:1; } }
+.dispatch-entry:last-child { border-bottom: none; }
+.dispatch-year {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--dim); margin-right: 6px;
+}
+.dispatch-entry.good { color: #6ab87a; }
+.dispatch-entry.bad  { color: #d06858; }
+.dispatch-entry.info { color: #7aabe0; }
+.dispatch-entry.gold { color: var(--gold); }
+
+/* TOAST */
+.toast-container {
+  position: fixed; bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 5px;
+  z-index: 300; pointer-events: none;
+}
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 8px 16px; border-radius: 3px;
+  font-family: var(--font-m); font-size: 11px;
+  color: var(--text); white-space: nowrap;
+  animation: toastAnim 2.8s ease forwards;
+  border-left: 3px solid var(--gold);
+}
+.toast.good { border-left-color: var(--green); }
+.toast.bad  { border-left-color: var(--red); }
+.toast.info { border-left-color: var(--blue); }
+@keyframes toastAnim {
+  0%   { opacity:0; transform: translateY(6px); }
+  12%  { opacity:1; transform: translateY(0); }
+  75%  { opacity:1; }
+  100% { opacity:0; transform: translateY(-4px); }
+}
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: 1fr; }
+  html, body { overflow: auto; }
+  .col, .center-col { max-height: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="masthead-brand">
+    <a href="../../index.html" class="back-link">← IDLERUSH</a>
+    <div>
+      <div class="brand-title">HEGEMONY</div>
+      <div class="brand-sub" id="nationName">THE REPUBLIC</div>
+    </div>
+  </div>
+
+  <div class="stat-bar">
+    <div class="stat-cell" data-stat="economy"   title="Economy — drives growth and policies">
+      <div class="stat-icon">⚖️</div>
+      <div class="stat-name">Economy</div>
+      <div class="stat-val" id="sv-economy">0</div>
+      <div class="stat-delta" id="sd-economy">—</div>
+    </div>
+    <div class="stat-cell" data-stat="military"  title="Military — strength and deterrence">
+      <div class="stat-icon">⚔️</div>
+      <div class="stat-name">Military</div>
+      <div class="stat-val" id="sv-military">0</div>
+      <div class="stat-delta" id="sd-military">—</div>
+    </div>
+    <div class="stat-cell" data-stat="diplomacy" title="Diplomacy — alliances and influence">
+      <div class="stat-icon">🤝</div>
+      <div class="stat-name">Diplomacy</div>
+      <div class="stat-val" id="sv-diplomacy">0</div>
+      <div class="stat-delta" id="sd-diplomacy">—</div>
+    </div>
+    <div class="stat-cell" data-stat="culture"   title="Culture — soft power and ideology">
+      <div class="stat-icon">🎭</div>
+      <div class="stat-name">Culture</div>
+      <div class="stat-val" id="sv-culture">0</div>
+      <div class="stat-delta" id="sd-culture">—</div>
+    </div>
+    <div class="stat-cell" data-stat="technology"title="Technology — advancement and edge">
+      <div class="stat-icon">⚙️</div>
+      <div class="stat-name">Technology</div>
+      <div class="stat-val" id="sv-technology">0</div>
+      <div class="stat-delta" id="sd-technology">—</div>
+    </div>
+  </div>
+
+  <div class="masthead-right">
+    <div class="era-display" id="eraDisplay">ANCIENT ERA</div>
+    <div class="year-display" id="yearDisplay">YEAR 1</div>
+    <div class="prestige-pips" id="prestigePips"></div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT: POLICIES -->
+  <div class="col" id="leftCol">
+    <div class="col-header">
+      <div class="col-title">Policy Council <div class="col-title-line"></div></div>
+      <div class="col-sub" id="policySubtitle">ACTIVE POLICIES — 0 / 3 SLOTS</div>
+    </div>
+    <div class="slots-display" id="slotsDisplay">
+      Policy slots: <span id="slotsUsed">0</span> / <span id="slotsMax">3</span>
+    </div>
+    <div class="col-scroll" id="policyList"></div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center-col">
+    <div class="center-tabs">
+      <button class="c-tab active" data-tab="worldmap">World Map</button>
+      <button class="c-tab" data-tab="rivals">Rival Nations</button>
+      <button class="c-tab" data-tab="events">Dispatches</button>
+      <button class="c-tab" data-tab="victory">Victory</button>
+    </div>
+    <div class="center-body" id="centerBody"></div>
+  </div>
+
+  <!-- RIGHT: INTEL -->
+  <div class="col" id="rightCol">
+    <div class="col-header">
+      <div class="col-title">Intelligence <div class="col-title-line"></div></div>
+    </div>
+    <div class="intel-tabs">
+      <button class="i-tab active" data-itab="advisors">Advisors</button>
+      <button class="i-tab" data-itab="ledger">Ledger</button>
+      <button class="i-tab" data-itab="dispatch">Dispatch</button>
+    </div>
+    <div class="col-scroll" id="rightContent"></div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════
+   GAME DATA
+══════════════════════════════════════════════════════ */
+const SAVE = 'hegemony_v2';
+
+const ERAS = [
+  { name: 'ANCIENT ERA',      minYear: 0,    policySlots: 3,  color: '#c8a84a' },
+  { name: 'MEDIEVAL ERA',     minYear: 80,   policySlots: 4,  color: '#8a7060' },
+  { name: 'INDUSTRIAL ERA',   minYear: 200,  policySlots: 5,  color: '#607080' },
+  { name: 'MODERN ERA',       minYear: 380,  policySlots: 6,  color: '#508090' },
+  { name: 'FUTURE ERA',       minYear: 600,  policySlots: 7,  color: '#7060b0' },
+];
+
+const VICTORY_PATHS = [
+  { id: 'military',   name: 'Imperial Dominion',    icon: '⚔️',  color: '#c03828', desc: 'Conquer or intimidate all rival nations', stat: 'military',   threshold: 300 },
+  { id: 'economic',   name: 'Commercial Hegemony',  icon: '⚖️',  color: '#c8a84a', desc: 'Achieve overwhelming economic dominance',  stat: 'economy',    threshold: 300 },
+  { id: 'cultural',   name: 'Cultural Enlightenment',icon: '🎭', color: '#2a7870', desc: 'Spread your culture to all civilisations',  stat: 'culture',    threshold: 300 },
+  { id: 'diplomatic', name: 'Grand Alliance',        icon: '🤝', color: '#3868a8', desc: 'Form alliances with all rival nations',     stat: 'diplomacy',  threshold: 300 },
+  { id: 'science',    name: 'Technological Singularity',icon: '⚙️',color:'#3a7848',desc: 'Achieve a technological breakthrough',      stat: 'technology', threshold: 300 },
+];
+
+// Policies: era, effects on stats per second, costs, side effects
+const POLICIES = [
+  // === ANCIENT ===
+  {
+    id: 'agrarian_reform', era: 0,
+    name: 'Agrarian Reform',
+    desc: 'Redistribute farmland to maximise yield. Builds economic foundation.',
+    effects: { economy: 1.2, culture: 0.3, military: -0.2 },
+    cost: { economy: 0 }, upkeep: 0,
+    tags: ['+Econ', '+Culture', '-Military'],
+  },
+  {
+    id: 'standing_army', era: 0,
+    name: 'Standing Army',
+    desc: 'Maintain a permanent professional military force.',
+    effects: { military: 1.5, economy: -0.5 },
+    cost: { economy: 10 }, upkeep: 0,
+    tags: ['+Military', '-Economy'],
+  },
+  {
+    id: 'trade_routes', era: 0,
+    name: 'Open Trade Routes',
+    desc: 'Establish merchant networks with neighboring territories.',
+    effects: { economy: 0.8, diplomacy: 0.6 },
+    cost: { economy: 5 }, upkeep: 0,
+    tags: ['+Econ', '+Diplo'],
+  },
+  {
+    id: 'oral_tradition', era: 0,
+    name: 'Oral Tradition',
+    desc: 'Preserve and share cultural knowledge through storytelling.',
+    effects: { culture: 1.0, technology: 0.3 },
+    cost: {}, upkeep: 0,
+    tags: ['+Culture', '+Tech'],
+  },
+  {
+    id: 'tribute_system', era: 0,
+    name: 'Tribute System',
+    desc: 'Extract resources from weaker neighbors. High risk, high reward.',
+    effects: { economy: 2.0, diplomacy: -1.2, military: 0.4 },
+    cost: { military: 15 }, upkeep: 0,
+    tags: ['+Econ ×2', '-Diplo', '+Military'],
+  },
+  // === MEDIEVAL ===
+  {
+    id: 'feudal_contracts', era: 1,
+    name: 'Feudal Contracts',
+    desc: 'Bind nobility to the crown in exchange for land rights.',
+    effects: { military: 1.2, economy: 0.8, diplomacy: 0.4, culture: -0.3 },
+    cost: { economy: 20 }, upkeep: 0,
+    tags: ['+Military', '+Econ', '+Diplo', '-Culture'],
+  },
+  {
+    id: 'cathedral_program', era: 1,
+    name: 'Cathedral Program',
+    desc: 'Fund monumental architecture to inspire the populace.',
+    effects: { culture: 2.0, economy: -0.4, diplomacy: 0.5 },
+    cost: { economy: 30 }, upkeep: 0,
+    tags: ['+Culture ×2', '-Econ', '+Diplo'],
+  },
+  {
+    id: 'crusade', era: 1,
+    name: 'Holy Crusade',
+    desc: 'Launch a religiously-motivated military campaign.',
+    effects: { military: 2.5, culture: 1.0, diplomacy: -2.0, economy: -1.0 },
+    cost: { military: 30, economy: 30 }, upkeep: 0,
+    tags: ['+Military ×2', '-Diplo ×2', '-Econ'],
+  },
+  {
+    id: 'silk_road', era: 1,
+    name: 'Silk Road Access',
+    desc: 'Control key passages in the long-distance trade network.',
+    effects: { economy: 2.0, technology: 0.8, diplomacy: 0.6 },
+    cost: { economy: 40, military: 10 }, upkeep: 0,
+    tags: ['+Econ ×2', '+Tech', '+Diplo'],
+  },
+  // === INDUSTRIAL ===
+  {
+    id: 'industrialisation', era: 2,
+    name: 'Industrialisation',
+    desc: 'Mechanise production. Transforms economy at social cost.',
+    effects: { economy: 3.0, technology: 1.5, culture: -1.0, diplomacy: -0.5 },
+    cost: { economy: 60, technology: 20 }, upkeep: 0,
+    tags: ['+Econ ×3', '+Tech', '-Culture'],
+  },
+  {
+    id: 'conscription', era: 2,
+    name: 'Mass Conscription',
+    desc: 'Universal military service builds the largest army in history.',
+    effects: { military: 4.0, economy: -1.5, culture: -0.5 },
+    cost: { military: 40 }, upkeep: 0,
+    tags: ['+Military ×4', '-Econ', '-Culture'],
+  },
+  {
+    id: 'colonial_empire', era: 2,
+    name: 'Colonial Empire',
+    desc: 'Establish overseas territories. Riches at a diplomatic price.',
+    effects: { economy: 4.0, military: 1.0, diplomacy: -3.0 },
+    cost: { military: 50, economy: 50 }, upkeep: 0,
+    tags: ['+Econ ×4', '+Military', '-Diplo ×3'],
+  },
+  {
+    id: 'scientific_society', era: 2,
+    name: 'Scientific Society',
+    desc: 'Fund academies and research institutions.',
+    effects: { technology: 3.0, culture: 1.0, economy: 0.5 },
+    cost: { economy: 50, culture: 20 }, upkeep: 0,
+    tags: ['+Tech ×3', '+Culture', '+Econ'],
+  },
+  // === MODERN ===
+  {
+    id: 'welfare_state', era: 3,
+    name: 'Welfare State',
+    desc: 'Universal social provisions create a stable, productive population.',
+    effects: { economy: 2.5, culture: 2.5, diplomacy: 1.5, military: -1.0 },
+    cost: { economy: 80 }, upkeep: 0,
+    tags: ['+Econ', '+Culture', '+Diplo', '-Military'],
+  },
+  {
+    id: 'nuclear_deterrence', era: 3,
+    name: 'Nuclear Deterrence',
+    desc: 'Strategic nuclear arsenal. Unmatched deterrence, global fear.',
+    effects: { military: 6.0, diplomacy: -2.0, economy: -1.5, technology: 1.0 },
+    cost: { technology: 80, economy: 80 }, upkeep: 0,
+    tags: ['+Military ×6', '-Diplo ×2', '+Tech'],
+  },
+  {
+    id: 'soft_power', era: 3,
+    name: 'Cultural Soft Power',
+    desc: 'Media, film, and music project your culture worldwide.',
+    effects: { culture: 5.0, diplomacy: 2.0, economy: 1.0 },
+    cost: { culture: 60, economy: 40 }, upkeep: 0,
+    tags: ['+Culture ×5', '+Diplo ×2', '+Econ'],
+  },
+  {
+    id: 'strategic_alliance', era: 3,
+    name: 'Strategic Alliance Network',
+    desc: 'Formalise military and economic alliances with key powers.',
+    effects: { diplomacy: 5.0, military: 1.5, economy: 1.5 },
+    cost: { diplomacy: 60, economy: 40 }, upkeep: 0,
+    tags: ['+Diplo ×5', '+Military', '+Econ'],
+  },
+  // === FUTURE ===
+  {
+    id: 'ai_governance', era: 4,
+    name: 'AI Governance',
+    desc: 'Artificial intelligence optimises every aspect of the state.',
+    effects: { economy: 5.0, technology: 5.0, culture: -2.0, diplomacy: 1.0 },
+    cost: { technology: 120, economy: 100 }, upkeep: 0,
+    tags: ['+Econ ×5', '+Tech ×5', '-Culture ×2'],
+  },
+  {
+    id: 'post_scarcity', era: 4,
+    name: 'Post-Scarcity Economy',
+    desc: 'Automated production eliminates material need. All stats rise.',
+    effects: { economy: 8.0, culture: 3.0, technology: 3.0, diplomacy: 3.0 },
+    cost: { economy: 150, technology: 150 }, upkeep: 0,
+    tags: ['+All Stats'],
+  },
+  {
+    id: 'world_state', era: 4,
+    name: 'World State Proposal',
+    desc: 'Propose a unified global government. Diplomatic master stroke.',
+    effects: { diplomacy: 10.0, culture: 4.0, military: -3.0 },
+    cost: { diplomacy: 150, culture: 100 }, upkeep: 0,
+    tags: ['+Diplo ×10', '+Culture', '-Military'],
+  },
+];
+
+const RIVAL_TEMPLATES = [
+  { name: 'The Iron Throne',  flag: '🦁', persona: 'aggressive',  colorH: 0   },
+  { name: 'The Azure Fleet',  flag: '⚓', persona: 'mercantile',  colorH: 210 },
+  { name: 'The Jade Court',   flag: '🐉', persona: 'cultural',    colorH: 140 },
+  { name: 'The Silver Hand',  flag: '🌙', persona: 'diplomatic',  colorH: 260 },
+];
+
+const EVENTS = [
+  {
+    id: 'drought', type: 'crisis',
+    headline: 'GREAT DROUGHT SWEEPS THE HEARTLAND',
+    body: 'Three consecutive dry seasons have devastated harvests. The council must act.',
+    choices: [
+      { text: 'Import food reserves',  outcome: 'Economy −15, Diplomacy +8',  effect: s => { s.stats.economy = Math.max(0, s.stats.economy - 15); s.stats.diplomacy += 8; }  },
+      { text: 'Ration and endure',     outcome: 'Culture −10, Tech +5',        effect: s => { s.stats.culture = Math.max(0, s.stats.culture - 10); s.stats.technology += 5; } },
+      { text: 'Invest in irrigation',  outcome: 'Economy −20, Economy +3/yr',  effect: s => { s.stats.economy = Math.max(0, s.stats.economy - 20); s.bonusRates.economy = (s.bonusRates.economy||0) + 3; } },
+    ],
+  },
+  {
+    id: 'plague', type: 'crisis',
+    headline: 'PLAGUE MOVES THROUGH THE CITIES',
+    body: 'A mysterious sickness spreads along trade routes. Panic grips the population.',
+    choices: [
+      { text: 'Quarantine all ports',  outcome: 'Economy −20, epidemic contained', effect: s => { s.stats.economy = Math.max(0, s.stats.economy - 20); } },
+      { text: 'Fund physicians',       outcome: 'Economy −10, Tech +10, Culture +5', effect: s => { s.stats.economy = Math.max(0, s.stats.economy - 10); s.stats.technology += 10; s.stats.culture += 5; } },
+      { text: 'Do nothing',            outcome: 'Military −15, Culture −15',        effect: s => { s.stats.military = Math.max(0, s.stats.military - 15); s.stats.culture = Math.max(0, s.stats.culture - 15); } },
+    ],
+  },
+  {
+    id: 'gold_discovery', type: 'opportunity',
+    headline: 'VAST GOLD DEPOSITS DISCOVERED',
+    body: 'Surveyors report enormous mineral wealth in the eastern provinces.',
+    choices: [
+      { text: 'State-controlled mining',  outcome: 'Economy +30, Culture −5',    effect: s => { s.stats.economy += 30; s.stats.culture = Math.max(0, s.stats.culture - 5); } },
+      { text: 'License to merchants',     outcome: 'Economy +20, Diplomacy +10', effect: s => { s.stats.economy += 20; s.stats.diplomacy += 10; } },
+      { text: 'Fortify and defend',       outcome: 'Military +15, Economy +15',  effect: s => { s.stats.military += 15; s.stats.economy += 15; } },
+    ],
+  },
+  {
+    id: 'rebellion', type: 'crisis',
+    headline: 'PROVINCIAL REBELLION ERUPTS',
+    body: 'Disenfranchised nobles have raised a banner against the crown.',
+    choices: [
+      { text: 'Crush militarily',   outcome: 'Military +10, Culture −15, Diplo −10', effect: s => { s.stats.military += 10; s.stats.culture = Math.max(0, s.stats.culture - 15); s.stats.diplomacy = Math.max(0, s.stats.diplomacy - 10); } },
+      { text: 'Negotiate terms',    outcome: 'Diplomacy +15, Economy −10',            effect: s => { s.stats.diplomacy += 15; s.stats.economy = Math.max(0, s.stats.economy - 10); } },
+      { text: 'Grant autonomy',     outcome: 'Culture +10, Diplomacy +10, Mil −10',  effect: s => { s.stats.culture += 10; s.stats.diplomacy += 10; s.stats.military = Math.max(0, s.stats.military - 10); } },
+    ],
+  },
+  {
+    id: 'philosopher_arrives', type: 'opportunity',
+    headline: 'GREAT PHILOSOPHER ARRIVES AT COURT',
+    body: 'A renowned thinker seeks patronage. Their ideas could reshape society.',
+    choices: [
+      { text: 'Sponsor their academy',  outcome: 'Tech +15, Culture +15, Economy −8', effect: s => { s.stats.technology += 15; s.stats.culture += 15; s.stats.economy = Math.max(0, s.stats.economy - 8); } },
+      { text: 'Commission a manifesto', outcome: 'Culture +25, Diplomacy +8',          effect: s => { s.stats.culture += 25; s.stats.diplomacy += 8; } },
+      { text: 'Send them away',         outcome: 'No effect',                          effect: () => {} },
+    ],
+  },
+  {
+    id: 'rival_weakened', type: 'opportunity',
+    headline: 'RIVAL NATION IN TURMOIL',
+    body: 'Internal strife has weakened your most dangerous neighbour. A strategic window opens.',
+    choices: [
+      { text: 'Invade immediately',      outcome: 'Military +20, Diplo −20',  effect: s => { s.stats.military += 20; s.stats.diplomacy = Math.max(0, s.stats.diplomacy - 20); } },
+      { text: 'Offer diplomatic terms',  outcome: 'Diplomacy +20, Economy +10', effect: s => { s.stats.diplomacy += 20; s.stats.economy += 10; } },
+      { text: 'Wait and observe',        outcome: 'Tech +10',                  effect: s => { s.stats.technology += 10; } },
+    ],
+  },
+  {
+    id: 'spy_network', type: 'diplomatic',
+    headline: 'SPY NETWORK UNCOVERED',
+    body: 'Your agents have infiltrated a rival court — and been caught.',
+    choices: [
+      { text: 'Deny everything',      outcome: 'Diplomacy −10, Intel gained',  effect: s => { s.stats.diplomacy = Math.max(0, s.stats.diplomacy - 10); s.bonusRates.technology = (s.bonusRates.technology||0) + 1; } },
+      { text: 'Offer reparations',    outcome: 'Economy −20, Diplomacy +10',   effect: s => { s.stats.economy = Math.max(0, s.stats.economy - 20); s.stats.diplomacy += 10; } },
+      { text: 'Recall all agents',    outcome: 'Diplomacy +5, lose intel',     effect: s => { s.stats.diplomacy += 5; } },
+    ],
+  },
+  {
+    id: 'technological_leap', type: 'opportunity',
+    headline: 'BREAKTHROUGH IN THE ROYAL LABORATORIES',
+    body: 'Your scientists report a fundamental discovery that could change everything.',
+    choices: [
+      { text: 'Militarise the discovery',  outcome: 'Military +20, Tech +10',       effect: s => { s.stats.military += 20; s.stats.technology += 10; } },
+      { text: 'Publish openly',            outcome: 'Diplo +15, Culture +10, Tech +10', effect: s => { s.stats.diplomacy += 15; s.stats.culture += 10; s.stats.technology += 10; } },
+      { text: 'Guard it as state secret',  outcome: 'Tech +25',                     effect: s => { s.stats.technology += 25; } },
+    ],
+  },
+];
+
+const ADVISORS = [
+  { name: 'Chancellor Voss',  title: 'Chief Economist',   avatar: '👴', stat: 'economy',   quotes: ['The treasury grows thick when the merchants grow fat.','A starving populace is the enemy of every empire.','Debt is a weapon — wield it carefully.'] },
+  { name: 'Marshal Dara',     title: 'Commander-in-Chief',avatar: '🪖', stat: 'military',  quotes: ['Every border is a negotiation backed by steel.','Peace is won by those strong enough to threaten war.','The best battle is the one your enemy refuses to fight.'] },
+  { name: 'Ambassador Sorel', title: 'Foreign Minister',  avatar: '🎩', stat: 'diplomacy', quotes: ['Nations have no permanent friends, only permanent interests.','A single alliance can undo a decade of war.','Words, properly arranged, are the deadliest weapon.'] },
+  { name: 'Archon Lira',      title: 'Minister of Culture',avatar: '🎭', stat: 'culture',  quotes: ['Conquer their hearts and their territory follows.','Art outlasts every army.','The story a nation tells itself is the nation.'] },
+  { name: 'Savant Miro',      title: 'Royal Scientist',   avatar: '🔭', stat: 'technology',quotes: ['Today\'s theory is tomorrow\'s weapon.','The state that stops learning has already begun to fall.','Progress is not optional.'] },
+];
+
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+let G = {
+  stats: { economy: 10, military: 10, diplomacy: 10, culture: 10, technology: 10 },
+  totalStats: { economy: 0, military: 0, diplomacy: 0, culture: 0, technology: 0 },
+  policies: [],          // active policy ids
+  year: 1,
+  prestige: 0,
+  prestigeBonus: {},     // stat → flat bonus from past runs
+  rivals: [],
+  currentEvent: null,
+  eventCooldown: 0,
+  log: [],
+  bonusRates: {},
+  victoryAchieved: null,
+};
+
+let activeTab    = 'worldmap';
+let activeITab   = 'advisors';
+let lastTick     = performance.now();
+let lastSave     = Date.now();
+let renderTimer  = 0;
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+function initRivals() {
+  G.rivals = RIVAL_TEMPLATES.map((t, i) => ({
+    ...t,
+    stats: {
+      economy:    20 + Math.random() * 20,
+      military:   20 + Math.random() * 20,
+      diplomacy:  20 + Math.random() * 20,
+      culture:    20 + Math.random() * 20,
+      technology: 20 + Math.random() * 20,
+    },
+    relation: 'neutral', // neutral / friendly / allied / hostile / war
+    relationScore: 50,   // 0–100
+  }));
+}
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE));
+    if (d) {
+      G = { ...G, ...d };
+      if (!G.rivals || G.rivals.length === 0) initRivals();
+    } else {
+      initRivals();
+    }
+  } catch { initRivals(); }
+}
+
+function save() {
+  G.lastSaved = Date.now();
+  localStorage.setItem(SAVE, JSON.stringify(G));
+}
+
+/* ══════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════ */
+function getEra() {
+  for (let i = ERAS.length - 1; i >= 0; i--) {
+    if (G.year >= ERAS[i].minYear) return ERAS[i];
+  }
+  return ERAS[0];
+}
+function getEraIdx() {
+  for (let i = ERAS.length - 1; i >= 0; i--) {
+    if (G.year >= ERAS[i].minYear) return i;
+  }
+  return 0;
+}
+function getPolicySlots() { return getEra().policySlots + (G.prestigeBonus.slots || 0); }
+function fmt(n) {
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return Math.floor(n);
+}
+
+/* ══════════════════════════════════════════════════════
+   RATES
+══════════════════════════════════════════════════════ */
+function getBaseRates() {
+  const rates = { economy: 0.5, military: 0.3, diplomacy: 0.3, culture: 0.3, technology: 0.3 };
+
+  // Active policy contributions
+  for (const pid of G.policies) {
+    const p = POLICIES.find(x => x.id === pid);
+    if (!p) continue;
+    for (const [k, v] of Object.entries(p.effects)) {
+      rates[k] = (rates[k] || 0) + v;
+    }
+  }
+
+  // Bonus rates from events/decisions
+  for (const [k, v] of Object.entries(G.bonusRates || {})) {
+    rates[k] = (rates[k] || 0) + v;
+  }
+
+  // Prestige bonuses
+  for (const [k, v] of Object.entries(G.prestigeBonus || {})) {
+    if (k !== 'slots') rates[k] = (rates[k] || 0) + v * 0.5;
+  }
+
+  // War penalty
+  for (const r of G.rivals) {
+    if (r.relation === 'war') {
+      rates.economy   = (rates.economy   || 0) - 0.5;
+      rates.diplomacy = (rates.diplomacy || 0) - 0.5;
+      rates.military  = (rates.military  || 0) + 0.8;
+    }
+    if (r.relation === 'allied') {
+      rates.diplomacy = (rates.diplomacy || 0) + 0.3;
+      rates.military  = (rates.military  || 0) + 0.2;
+    }
+  }
+
+  return rates;
+}
+
+/* ══════════════════════════════════════════════════════
+   RIVAL AI
+══════════════════════════════════════════════════════ */
+function tickRivals(dt) {
+  for (const r of G.rivals) {
+    // Rivals grow based on persona
+    const growthMap = {
+      aggressive:  { military: 0.8, economy: 0.4, diplomacy: -0.1, culture: 0.2, technology: 0.3 },
+      mercantile:  { military: 0.2, economy: 1.0, diplomacy: 0.5,  culture: 0.3, technology: 0.4 },
+      cultural:    { military: 0.1, economy: 0.4, diplomacy: 0.4,  culture: 1.0, technology: 0.3 },
+      diplomatic:  { military: 0.2, economy: 0.5, diplomacy: 1.0,  culture: 0.4, technology: 0.3 },
+    };
+    const growth = growthMap[r.persona] || growthMap.mercantile;
+    for (const [k, v] of Object.entries(growth)) {
+      r.stats[k] = (r.stats[k] || 0) + v * dt;
+    }
+
+    // Update relation score based on relative military + diplomacy
+    const myPower = G.stats.military + G.stats.diplomacy;
+    const theirPower = r.stats.military + r.stats.diplomacy;
+    const delta = (myPower - theirPower) / 500;
+    r.relationScore = Math.max(0, Math.min(100, (r.relationScore || 50) + delta * dt * 0.5 + (Math.random() - 0.5) * 0.1));
+
+    // Relation thresholds
+    if      (r.relation === 'war'      && r.relationScore > 55) r.relation = 'hostile';
+    else if (r.relation === 'hostile'  && r.relationScore > 65) r.relation = 'neutral';
+    else if (r.relation === 'neutral'  && r.relationScore > 75) r.relation = 'friendly';
+    else if (r.relation === 'friendly' && r.relationScore > 85) r.relation = 'allied';
+    else if (r.relation === 'allied'   && r.relationScore < 60) r.relation = 'friendly';
+    else if (r.relation === 'neutral'  && r.relationScore < 35) r.relation = 'hostile';
+    else if (r.relation === 'hostile'  && r.relationScore < 20 && r.stats.military > G.stats.military * 0.7) {
+      r.relation = 'war';
+      toast(`⚔️ ${r.name} has DECLARED WAR!`, 'bad');
+      addLog(`${r.name} declared war on us!`, 'bad');
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   ACTIONS
+══════════════════════════════════════════════════════ */
+function enactPolicy(pid) {
+  const p = POLICIES.find(x => x.id === pid);
+  if (!p) return;
+  if (G.policies.includes(pid)) return;
+  if (G.policies.length >= getPolicySlots()) { toast('No policy slots available!', 'bad'); return; }
+
+  // Check era
+  const eraIdx = getEraIdx();
+  if (p.era > eraIdx) { toast('Requires a later era', 'bad'); return; }
+
+  // Check cost
+  for (const [k, v] of Object.entries(p.cost || {})) {
+    if ((G.stats[k] || 0) < v) { toast(`Need ${v} ${k} to enact`, 'bad'); return; }
+  }
+  for (const [k, v] of Object.entries(p.cost || {})) {
+    G.stats[k] = Math.max(0, (G.stats[k] || 0) - v);
+  }
+
+  G.policies.push(pid);
+  addLog(`Policy enacted: ${p.name}`, 'gold');
+  toast(`✅ ${p.name} enacted`, 'good');
+  renderAll();
+}
+
+function repealPolicy(pid) {
+  const p = POLICIES.find(x => x.id === pid);
+  if (!p) return;
+  G.policies = G.policies.filter(x => x !== pid);
+  // 50% cost refund
+  for (const [k, v] of Object.entries(p.cost || {})) {
+    G.stats[k] = (G.stats[k] || 0) + v * 0.5;
+  }
+  addLog(`Policy repealed: ${p.name}`, '');
+  toast(`Policy repealed`, '');
+  renderAll();
+}
+
+function rivalAction(rivalIdx, action) {
+  const r = G.rivals[rivalIdx];
+  if (!r) return;
+
+  if (action === 'offer_trade') {
+    const cost = 15;
+    if (G.stats.economy < cost) { toast('Need 15 Economy', 'bad'); return; }
+    G.stats.economy -= cost;
+    r.relationScore = Math.min(100, r.relationScore + 15);
+    r.stats.economy += 10;
+    toast(`Trade offered to ${r.name}`, 'info');
+    addLog(`Offered trade deal to ${r.name}`, 'info');
+  } else if (action === 'cultural_exchange') {
+    const cost = 15;
+    if (G.stats.culture < cost) { toast('Need 15 Culture', 'bad'); return; }
+    G.stats.culture -= cost;
+    r.relationScore = Math.min(100, r.relationScore + 20);
+    toast(`Cultural exchange with ${r.name}`, 'info');
+    addLog(`Cultural exchange initiated with ${r.name}`, 'info');
+  } else if (action === 'military_pressure') {
+    if (G.stats.military < r.stats.military * 0.8) { toast('Insufficient military advantage', 'bad'); return; }
+    r.relationScore = Math.max(0, r.relationScore - 25);
+    G.stats.military -= 10;
+    toast(`Military pressure applied on ${r.name}`, '');
+    addLog(`Applied military pressure on ${r.name}`, '');
+  } else if (action === 'declare_war') {
+    if (r.relation === 'war') { toast('Already at war!', 'bad'); return; }
+    r.relation = 'war'; r.relationScore = 10;
+    addLog(`Declared war on ${r.name}!`, 'bad');
+    toast(`⚔️ War declared on ${r.name}!`, 'bad');
+  } else if (action === 'sue_for_peace') {
+    if (r.relation !== 'war') return;
+    const cost = 30;
+    if (G.stats.diplomacy < cost) { toast('Need 30 Diplomacy', 'bad'); return; }
+    G.stats.diplomacy -= cost;
+    r.relation = 'neutral'; r.relationScore = 40;
+    toast(`Peace agreed with ${r.name}`, 'good');
+    addLog(`Peace treaty signed with ${r.name}`, 'good');
+  }
+
+  renderAll();
+}
+
+function resolveEvent(choice) {
+  if (!G.currentEvent) return;
+  choice.effect(G);
+  addLog(`[EVENT] ${G.currentEvent.headline} — resolved`, 'info');
+  G.currentEvent = null;
+  G.eventCooldown = 60 + Math.random() * 120;
+  renderAll();
+}
+
+function doPrestige() {
+  if (!checkVictory()) return;
+
+  // Store bonuses
+  const topStat = Object.entries(G.stats).sort((a,b)=>b[1]-a[1])[0];
+  G.prestigeBonus[topStat[0]] = (G.prestigeBonus[topStat[0]] || 0) + 2;
+  G.prestigeBonus.slots = (G.prestigeBonus.slots || 0) + 1;
+  G.prestige++;
+
+  // Reset
+  G.stats    = { economy: 15, military: 15, diplomacy: 15, culture: 15, technology: 15 };
+  G.policies = [];
+  G.year     = 1;
+  G.victoryAchieved = null;
+  G.bonusRates = {};
+  G.currentEvent = null;
+  G.eventCooldown = 30;
+  G.log = [];
+  initRivals();
+
+  addLog(`Dynasty restart. Prestige ${G.prestige}. Legacy bonuses carried forward.`, 'gold');
+  renderAll();
+  // Remove modal
+  document.getElementById('victoryModal')?.remove();
+}
+
+/* ══════════════════════════════════════════════════════
+   VICTORY CHECK
+══════════════════════════════════════════════════════ */
+function checkVictory() {
+  if (G.victoryAchieved) return true;
+  for (const vp of VICTORY_PATHS) {
+    if (G.stats[vp.stat] >= vp.threshold) {
+      G.victoryAchieved = vp.id;
+      showVictory(vp);
+      return true;
+    }
+  }
+  return false;
+}
+
+function showVictory(vp) {
+  if (document.getElementById('victoryModal')) return;
+  const modal = document.createElement('div');
+  modal.className = 'victory-modal'; modal.id = 'victoryModal';
+  const years = G.year;
+  const policies = G.policies.length;
+  modal.innerHTML = `
+    <div class="victory-box">
+      <div class="victory-type">VICTORY ACHIEVED — ${vp.icon} ${vp.id.toUpperCase()}</div>
+      <div class="victory-title">${vp.name}</div>
+      <div class="victory-desc">"${vp.desc}"<br><br>Your nation has achieved what few in history have dared to dream. The world bows to your supremacy.</div>
+      <div class="victory-stats">
+        <div class="v-stat"><div class="v-stat-val">${years}</div><div class="v-stat-label">Years Ruled</div></div>
+        <div class="v-stat"><div class="v-stat-val">${G.prestige + 1}</div><div class="v-stat-label">Dynasty #</div></div>
+        <div class="v-stat"><div class="v-stat-val">${Math.floor(G.stats[vp.stat])}</div><div class="v-stat-label">${vp.stat.toUpperCase()}</div></div>
+      </div>
+      <button class="v-btn" id="newDynastyBtn">BEGIN NEW DYNASTY →</button>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('newDynastyBtn').addEventListener('click', doPrestige);
+  addLog(`✨ VICTORY: ${vp.name}`, 'gold');
+  toast(`✨ VICTORY — ${vp.name}!`, 'good');
+}
+
+/* ══════════════════════════════════════════════════════
+   WORLD MAP CANVAS
+══════════════════════════════════════════════════════ */
+let mapCanvas, mapCtx;
+const NATION_REGIONS = [
+  { cx: 0.22, cy: 0.42, rx: 0.16, ry: 0.12, label: 'YOU', self: true  },
+  { cx: 0.60, cy: 0.30, rx: 0.14, ry: 0.11, label: 0,    self: false },
+  { cx: 0.75, cy: 0.60, rx: 0.12, ry: 0.10, label: 1,    self: false },
+  { cx: 0.42, cy: 0.72, rx: 0.13, ry: 0.09, label: 2,    self: false },
+  { cx: 0.10, cy: 0.65, rx: 0.10, ry: 0.10, label: 3,    self: false },
+];
+
+function drawMap() {
+  if (!mapCanvas) {
+    mapCanvas = document.getElementById('worldmap');
+    if (!mapCanvas) return;
+  }
+  mapCtx = mapCanvas.getContext('2d');
+  const W = mapCanvas.width, H = mapCanvas.height;
+  mapCtx.clearRect(0, 0, W, H);
+
+  // Ocean bg
+  const ocean = mapCtx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.6);
+  ocean.addColorStop(0,   'rgba(20,28,42,1)');
+  ocean.addColorStop(1,   'rgba(10,14,20,1)');
+  mapCtx.fillStyle = ocean;
+  mapCtx.fillRect(0, 0, W, H);
+
+  // Grid
+  mapCtx.strokeStyle = 'rgba(200,200,150,0.04)';
+  mapCtx.lineWidth = 1;
+  for (let x = 0; x < W; x += W/12) {
+    mapCtx.beginPath(); mapCtx.moveTo(x,0); mapCtx.lineTo(x,H); mapCtx.stroke();
+  }
+  for (let y = 0; y < H; y += H/8) {
+    mapCtx.beginPath(); mapCtx.moveTo(0,y); mapCtx.lineTo(W,y); mapCtx.stroke();
+  }
+
+  // Draw each nation region
+  NATION_REGIONS.forEach((reg, i) => {
+    const cx = reg.cx * W, cy = reg.cy * H;
+    const rx = reg.rx * W, ry = reg.ry * H;
+
+    let color, relation = 'self';
+    if (reg.self) {
+      color = '#c8a84a';
+    } else {
+      const rival = G.rivals[reg.label];
+      if (!rival) return;
+      const relColors = { war: '#c03828', hostile: '#a04030', neutral: '#607060', friendly: '#3868a8', allied: '#2858a0' };
+      color = relColors[rival.relation] || '#607060';
+      relation = rival.relation;
+    }
+
+    // Territory blob
+    mapCtx.save();
+    mapCtx.beginPath();
+    // Slightly irregular blob using bezier
+    mapCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    const grad = mapCtx.createRadialGradient(cx-rx*0.2, cy-ry*0.2, 0, cx, cy, rx);
+    grad.addColorStop(0, color + '40');
+    grad.addColorStop(0.6, color + '20');
+    grad.addColorStop(1, color + '08');
+    mapCtx.fillStyle = grad;
+    mapCtx.fill();
+    mapCtx.strokeStyle = color + '50';
+    mapCtx.lineWidth = 1.5;
+    mapCtx.stroke();
+    mapCtx.restore();
+
+    // Capital dot
+    mapCtx.beginPath();
+    mapCtx.arc(cx, cy, 4, 0, Math.PI*2);
+    mapCtx.fillStyle = color;
+    mapCtx.fill();
+    mapCtx.beginPath();
+    mapCtx.arc(cx, cy, 7, 0, Math.PI*2);
+    mapCtx.strokeStyle = color + '60';
+    mapCtx.lineWidth = 1;
+    mapCtx.stroke();
+
+    // Label
+    mapCtx.font = 'bold 9px "IBM Plex Mono"';
+    mapCtx.fillStyle = color + 'cc';
+    mapCtx.textAlign = 'center';
+    const label = reg.self ? 'YOU' : (G.rivals[reg.label]?.name?.split(' ')[1] || '');
+    mapCtx.fillText(label, cx, cy - ry - 5);
+
+    // War X
+    if (!reg.self && G.rivals[reg.label]?.relation === 'war') {
+      mapCtx.font = '14px serif';
+      mapCtx.fillStyle = '#e04030cc';
+      mapCtx.fillText('✕', cx + rx * 0.5, cy - ry * 0.3);
+    }
+    // Allied star
+    if (!reg.self && G.rivals[reg.label]?.relation === 'allied') {
+      mapCtx.font = '12px serif';
+      mapCtx.fillStyle = '#4090e0cc';
+      mapCtx.fillText('★', cx + rx * 0.5, cy - ry * 0.3);
+    }
+  });
+
+  // Power bar at bottom
+  const statOrder = ['economy','military','diplomacy','culture','technology'];
+  const statColors = { economy:'#c8a84a', military:'#c03828', diplomacy:'#3868a8', culture:'#2a7870', technology:'#3a7848' };
+  const barH = 8, barY = H - barH - 6, totalW = W - 20, startX = 10;
+  const total = statOrder.reduce((s,k) => s + (G.stats[k]||0), 0) || 1;
+  let bx = startX;
+  for (const k of statOrder) {
+    const w = (G.stats[k] / total) * totalW;
+    mapCtx.fillStyle = statColors[k] + 'aa';
+    mapCtx.fillRect(bx, barY, w, barH);
+    bx += w;
+  }
+  mapCtx.strokeStyle = 'rgba(200,180,120,0.15)';
+  mapCtx.lineWidth = 1;
+  mapCtx.strokeRect(startX, barY, totalW, barH);
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════════ */
+function renderTopbar() {
+  const STAT_KEYS = ['economy','military','diplomacy','culture','technology'];
+  const rates = getBaseRates();
+  for (const k of STAT_KEYS) {
+    const val = G.stats[k] || 0;
+    const rate = rates[k] || 0;
+    const max = 300;
+    document.getElementById(`sv-${k}`).textContent = fmt(val);
+    const deltaEl = document.getElementById(`sd-${k}`);
+    deltaEl.textContent = (rate >= 0 ? '+' : '') + rate.toFixed(1) + '/yr';
+    deltaEl.className = 'stat-delta ' + (rate > 0 ? 'up' : rate < 0 ? 'down' : 'zero');
+    const cell = document.querySelector(`[data-stat="${k}"]`);
+    if (cell) cell.style.setProperty('--pct', Math.min(100, (val/max)*100) + '%');
+  }
+
+  const era = getEra();
+  document.getElementById('eraDisplay').textContent = era.name;
+  document.getElementById('yearDisplay').textContent = `YEAR ${Math.floor(G.year)}`;
+
+  // Prestige pips
+  const pips = document.getElementById('prestigePips');
+  pips.innerHTML = '';
+  for (let i = 0; i < Math.min(10, Math.max(3, G.prestige + 3)); i++) {
+    const d = document.createElement('div');
+    d.className = 'pip' + (i < G.prestige ? ' lit' : '');
+    pips.appendChild(d);
+  }
+}
+
+function renderPolicies() {
+  const list = document.getElementById('policyList');
+  const eraIdx = getEraIdx();
+  const slots = getPolicySlots();
+  const used = G.policies.length;
+
+  document.getElementById('slotsUsed').textContent = used;
+  document.getElementById('slotsMax').textContent  = slots;
+
+  list.innerHTML = '';
+
+  // Sort: active first, then by era
+  const sorted = [...POLICIES].sort((a, b) => {
+    const aActive = G.policies.includes(a.id) ? 0 : 1;
+    const bActive = G.policies.includes(b.id) ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return a.era - b.era;
+  });
+
+  for (const p of sorted) {
+    const active  = G.policies.includes(p.id);
+    const locked  = p.era > eraIdx;
+    const full    = !active && used >= slots;
+    const canAfford = Object.entries(p.cost||{}).every(([k,v]) => (G.stats[k]||0) >= v);
+    const costStr = Object.entries(p.cost||{}).map(([k,v])=>`<span>${v}</span> ${k}`).join(', ');
+
+    const div = document.createElement('div');
+    div.className = 'policy-card ' + (active ? 'enacted' : locked ? 'locked' : 'available');
+    div.innerHTML = `
+      <div class="policy-header">
+        <div class="policy-name">${p.name}</div>
+        <div class="policy-era">${ERAS[p.era]?.name.split(' ')[0]}</div>
+      </div>
+      <div class="policy-desc">${p.desc}</div>
+      <div class="policy-effects">${p.tags.map(t => {
+        const cls = t.startsWith('+') ? 'eff-pos' : t.startsWith('-') ? 'eff-neg' : 'eff-neu';
+        return `<span class="effect-tag ${cls}">${t}</span>`;
+      }).join('')}</div>
+      ${locked ? `<div class="policy-cost">Requires <span>${ERAS[p.era]?.name}</span></div>` :
+        Object.keys(p.cost||{}).length > 0 ? `<div class="policy-cost">Cost: ${costStr}</div>` : ''}
+      ${!locked ? `<div class="policy-actions">
+        ${active
+          ? `<button class="p-btn p-btn-repeal" data-repeal="${p.id}">REPEAL</button>`
+          : `<button class="p-btn p-btn-enact" data-enact="${p.id}" ${full || !canAfford ? 'disabled' : ''}>${full ? 'SLOTS FULL' : !canAfford ? 'UNAFFORDABLE' : 'ENACT'}</button>`
+        }
+      </div>` : ''}`;
+
+    list.appendChild(div);
+  }
+
+  list.querySelectorAll('[data-enact]').forEach(b => b.addEventListener('click', () => enactPolicy(b.dataset.enact)));
+  list.querySelectorAll('[data-repeal]').forEach(b => b.addEventListener('click', () => repealPolicy(b.dataset.repeal)));
+}
+
+function renderCenter() {
+  const body = document.getElementById('centerBody');
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (activeTab === 'worldmap') {
+    const wrap = document.createElement('div');
+    wrap.className = 'map-wrap';
+    const cv = document.createElement('canvas');
+    cv.id = 'worldmap'; cv.width = 560; cv.height = 300;
+    wrap.appendChild(cv);
+    // Legend
+    const relColors = { 'You': '#c8a84a', 'Neutral': '#607060', 'Friendly': '#3868a8', 'Allied': '#4090e0', 'Hostile': '#a04030', 'War': '#c03828' };
+    const legend = document.createElement('div'); legend.className = 'map-legend';
+    for (const [label, color] of Object.entries(relColors)) {
+      legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div>${label}</div>`;
+    }
+    wrap.appendChild(legend);
+    body.appendChild(wrap);
+    drawMap();
+
+    // Summary stats
+    const rates = getBaseRates();
+    const summaryDiv = document.createElement('div');
+    summaryDiv.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px';
+    const items = [
+      { label:'TOTAL POWER', val: fmt(Object.values(G.stats).reduce((a,b)=>a+b,0)) },
+      { label:'YEARS RULED', val: Math.floor(G.year) },
+      { label:'ACTIVE POLICIES', val: G.policies.length + ' / ' + getPolicySlots() },
+      { label:'DYNASTY', val: '#' + (G.prestige + 1) },
+    ];
+    items.forEach(item => {
+      summaryDiv.innerHTML += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:10px 12px">
+        <div style="font-family:var(--font-m);font-size:8px;letter-spacing:0.14em;color:var(--dim);text-transform:uppercase">${item.label}</div>
+        <div style="font-family:var(--font-d);font-size:20px;color:var(--gold);margin-top:3px">${item.val}</div>
+      </div>`;
+    });
+    body.appendChild(summaryDiv);
+
+    // Victory progress
+    const vpDiv = document.createElement('div');
+    vpDiv.className = 'victory-section';
+    for (const vp of VICTORY_PATHS) {
+      const val = G.stats[vp.stat] || 0;
+      const pct = Math.min(100, (val / vp.threshold) * 100);
+      const el = document.createElement('div');
+      el.className = 'victory-path';
+      el.innerHTML = `
+        <div class="vp-header">
+          <div class="vp-name">${vp.icon} ${vp.name}</div>
+          <div class="vp-pct">${Math.floor(pct)}%</div>
+        </div>
+        <div class="vp-bar"><div class="vp-fill" style="width:${pct}%;background:${vp.color}"></div></div>
+        <div class="vp-desc">${vp.desc} — need ${vp.threshold} ${vp.stat}</div>`;
+      vpDiv.appendChild(el);
+    }
+    body.appendChild(vpDiv);
+
+  } else if (activeTab === 'rivals') {
+    const title = document.createElement('div');
+    title.style.cssText = 'font-family:var(--font-s);font-size:13px;font-style:italic;color:var(--muted);margin-bottom:2px';
+    title.textContent = 'The great powers of the world — their intentions and your options.';
+    body.appendChild(title);
+    const grid = document.createElement('div'); grid.className = 'rivals-grid';
+    G.rivals.forEach((r, i) => {
+      const relClass = r.relation === 'war' ? 'at-war' : r.relation === 'allied' ? 'allied' : '';
+      const relLabel = r.relation.charAt(0).toUpperCase() + r.relation.slice(1);
+      const relCls   = `rel-${r.relation}`;
+      const div = document.createElement('div');
+      div.className = `rival-card ${relClass}`;
+      div.innerHTML = `
+        <div class="rival-header">
+          <div>
+            <div class="rival-name">${r.name}</div>
+            <div style="font-family:var(--font-m);font-size:9px;color:var(--dim);text-transform:uppercase;margin-top:2px;letter-spacing:0.08em">${r.persona}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+            <div class="rival-flag">${r.flag}</div>
+            <div class="rival-relation ${relCls}">${relLabel}</div>
+          </div>
+        </div>
+        <div class="rival-stats">
+          ${['economy','military','diplomacy','culture','technology'].map(k=>`
+            <div class="rival-stat">
+              <div class="rival-stat-val">${fmt(r.stats[k]||0)}</div>
+              <div class="rival-stat-key">${k.slice(0,3)}</div>
+            </div>`).join('')}
+        </div>
+        <div class="rival-btns">
+          <button class="r-btn ally"   data-ai="${i}" data-act="offer_trade"        title="Offer trade deal">Trade</button>
+          <button class="r-btn ally"   data-ai="${i}" data-act="cultural_exchange"  title="Cultural exchange">Culture</button>
+          <button class="r-btn danger" data-ai="${i}" data-act="military_pressure"  title="Apply military pressure">Pressure</button>
+          ${r.relation === 'war'
+            ? `<button class="r-btn ally" data-ai="${i}" data-act="sue_for_peace">Peace</button>`
+            : `<button class="r-btn danger" data-ai="${i}" data-act="declare_war">War</button>`}
+        </div>`;
+      grid.appendChild(div);
+    });
+    body.appendChild(grid);
+    body.querySelectorAll('[data-ai]').forEach(b =>
+      b.addEventListener('click', () => rivalAction(parseInt(b.dataset.ai), b.dataset.act))
+    );
+
+  } else if (activeTab === 'events') {
+    if (G.currentEvent) {
+      const ev = G.currentEvent;
+      const div = document.createElement('div');
+      div.className = `event-banner ${ev.type}`;
+      div.innerHTML = `
+        <div class="event-kicker">🔔 ${ev.type.toUpperCase()} — DISPATCH RECEIVED</div>
+        <div class="event-headline">${ev.headline}</div>
+        <div class="event-body">${ev.body}</div>
+        <div class="event-choices">${ev.choices.map((c,idx)=>`
+          <button class="e-choice" data-ci="${idx}">
+            ${c.text}
+            <span class="choice-outcome">${c.outcome}</span>
+          </button>`).join('')}
+        </div>`;
+      body.appendChild(div);
+      body.querySelectorAll('[data-ci]').forEach(b =>
+        b.addEventListener('click', () => resolveEvent(ev.choices[parseInt(b.dataset.ci)]))
+      );
+    } else {
+      body.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--dim)">
+        <div style="font-size:28px;margin-bottom:14px">📜</div>
+        <div style="font-family:var(--font-d);font-size:14px;letter-spacing:0.12em;margin-bottom:8px">NO PENDING DISPATCHES</div>
+        <div style="font-size:12px;font-style:italic;color:var(--dim)">Events arise as your civilization grows. Stay prepared.</div>
+      </div>`;
+    }
+
+  } else if (activeTab === 'victory') {
+    const div = document.createElement('div');
+    div.innerHTML = `<div style="font-family:var(--font-s);font-size:13px;font-style:italic;color:var(--muted);margin-bottom:12px">Five paths lead to supremacy. Only one need be completed.</div>`;
+    body.appendChild(div);
+    const vpDiv = document.createElement('div'); vpDiv.className = 'victory-section';
+    for (const vp of VICTORY_PATHS) {
+      const val = G.stats[vp.stat] || 0;
+      const pct = Math.min(100, (val / vp.threshold) * 100);
+      const el = document.createElement('div');
+      el.className = 'victory-path';
+      el.style.borderLeftColor = pct >= 100 ? vp.color : '';
+      el.innerHTML = `
+        <div class="vp-header">
+          <div class="vp-name">${vp.icon} ${vp.name} ${pct >= 100 ? '<span style="color:#6ab87a;font-size:10px;font-family:var(--font-m)">★ ACHIEVED</span>' : ''}</div>
+          <div class="vp-pct" style="color:${vp.color}">${Math.floor(pct)}%</div>
+        </div>
+        <div class="vp-bar"><div class="vp-fill" style="width:${pct}%;background:${vp.color}"></div></div>
+        <div class="vp-desc">${vp.desc}<br>Current ${vp.stat}: <strong style="color:${vp.color}">${fmt(val)}</strong> / ${vp.threshold}</div>`;
+      vpDiv.appendChild(el);
+    }
+    body.appendChild(vpDiv);
+  }
+}
+
+function renderRight() {
+  const el = document.getElementById('rightContent');
+  el.innerHTML = '';
+
+  if (activeITab === 'advisors') {
+    // Find most relevant advisor (highest rate contributor)
+    const rates = getBaseRates();
+    const topStat = Object.entries(rates).sort((a,b)=>b[1]-a[1])[0]?.[0];
+
+    for (const adv of ADVISORS) {
+      const speaking = adv.stat === topStat;
+      const quote = adv.quotes[Math.floor(G.year / 30) % adv.quotes.length];
+      const div = document.createElement('div');
+      div.className = 'advisor-card' + (speaking ? ' speaking' : '');
+      div.innerHTML = `
+        <div class="advisor-header">
+          <div class="advisor-avatar">${adv.avatar}</div>
+          <div>
+            <div class="advisor-name">${adv.name}</div>
+            <div class="advisor-title">${adv.title}</div>
+          </div>
+        </div>
+        <div class="advisor-quote">"${quote}"</div>`;
+      el.appendChild(div);
+    }
+
+  } else if (activeITab === 'ledger') {
+    const rates = getBaseRates();
+    const sections = [
+      { label: 'CURRENT RATES (PER YEAR)', rows: [
+        ['Economy',    rates.economy?.toFixed(1) || '0', rates.economy >= 0 ? 'pos' : 'neg'],
+        ['Military',   rates.military?.toFixed(1) || '0', rates.military >= 0 ? 'pos' : 'neg'],
+        ['Diplomacy',  rates.diplomacy?.toFixed(1) || '0', rates.diplomacy >= 0 ? 'pos' : 'neg'],
+        ['Culture',    rates.culture?.toFixed(1) || '0', rates.culture >= 0 ? 'pos' : 'neg'],
+        ['Technology', rates.technology?.toFixed(1) || '0', rates.technology >= 0 ? 'pos' : 'neg'],
+      ]},
+      { label: 'STANDING', rows: [
+        ['Active Policies',  G.policies.length + ' / ' + getPolicySlots(), ''],
+        ['Rivals at War',    G.rivals.filter(r=>r.relation==='war').length, G.rivals.some(r=>r.relation==='war') ? 'neg' : ''],
+        ['Allies',           G.rivals.filter(r=>r.relation==='allied').length, G.rivals.some(r=>r.relation==='allied') ? 'pos' : ''],
+        ['Dynasty #',        G.prestige + 1, ''],
+        ['Current Era',      getEra().name, ''],
+      ]},
+    ];
+    for (const sec of sections) {
+      el.innerHTML += `<div class="ledger-section-header">${sec.label}</div>`;
+      for (const [label, val, cls] of sec.rows) {
+        el.innerHTML += `<div class="ledger-row"><span class="ledger-label">${label}</span><span class="ledger-val ${cls}">${val}</span></div>`;
+      }
+    }
+
+  } else if (activeITab === 'dispatch') {
+    if (G.log.length === 0) {
+      el.innerHTML = `<div style="color:var(--dim);font-family:var(--font-m);font-size:10px;padding:20px;text-align:center;letter-spacing:0.08em">NO RECORDS YET</div>`;
+    } else {
+      [...G.log].reverse().slice(0, 50).forEach(entry => {
+        const d = document.createElement('div');
+        d.className = `dispatch-entry ${entry.type || ''}`;
+        d.innerHTML = `<span class="dispatch-year">Yr ${Math.floor(entry.year)}</span>${entry.text}`;
+        el.appendChild(d);
+      });
+    }
+  }
+}
+
+function renderAll() {
+  renderTopbar();
+  renderPolicies();
+  renderCenter();
+  renderRight();
+}
+
+/* ══════════════════════════════════════════════════════
+   TOAST / LOG
+══════════════════════════════════════════════════════ */
+function toast(msg, type = '') {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  c.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+function addLog(text, type = '') {
+  G.log.push({ text, type, year: G.year });
+  if (G.log.length > 300) G.log.shift();
+}
+
+/* ══════════════════════════════════════════════════════
+   EVENT TRIGGER
+══════════════════════════════════════════════════════ */
+function tryTriggerEvent() {
+  if (G.currentEvent || G.eventCooldown > 0) return;
+  const total = Object.values(G.stats).reduce((a,b)=>a+b,0);
+  if (total < 80) return;
+  if (Math.random() > 0.004) return;
+
+  const eligible = EVENTS.filter(e => {
+    if (G.recentEvents?.includes(e.id)) return false;
+    return true;
+  });
+  if (!eligible.length) return;
+
+  G.currentEvent = eligible[Math.floor(Math.random() * eligible.length)];
+  G.recentEvents = [...(G.recentEvents||[]).slice(-3), G.currentEvent.id];
+  G.eventCooldown = 90;
+  toast(`📜 New dispatch: ${G.currentEvent.headline}`, 'info');
+  addLog(`[DISPATCH] ${G.currentEvent.headline}`, 'info');
+  if (activeTab === 'events') renderCenter();
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIN LOOP
+══════════════════════════════════════════════════════ */
+function tick(now) {
+  const dt = Math.min((now - lastTick) / 1000, 0.5);
+  lastTick = now;
+
+  // Year progresses (1 year per ~10 seconds)
+  G.year += dt * 0.1;
+
+  // Stat production
+  const rates = getBaseRates();
+  for (const [k, v] of Object.entries(rates)) {
+    G.stats[k] = Math.max(0, (G.stats[k] || 0) + v * dt * 0.1);
+    if (v > 0) G.totalStats[k] = (G.totalStats[k] || 0) + v * dt * 0.1;
+  }
+
+  // Rival AI
+  tickRivals(dt * 0.05);
+
+  // Timers
+  if (G.eventCooldown > 0) G.eventCooldown = Math.max(0, G.eventCooldown - dt);
+
+  // Events
+  tryTriggerEvent();
+
+  // Victory check
+  if (!G.victoryAchieved) checkVictory();
+
+  // Throttled UI render
+  renderTimer += dt;
+  if (renderTimer >= 0.5) { // every 500ms
+    renderTimer = 0;
+    renderTopbar();
+    if (activeTab === 'worldmap') { renderCenter(); }
+    else if (activeTab === 'victory') renderCenter();
+    if (activeITab === 'ledger') renderRight();
+  }
+
+  // Auto-save
+  if (Date.now() - lastSave > 15000) { save(); lastSave = Date.now(); }
+
+  requestAnimationFrame(tick);
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB EVENTS
+══════════════════════════════════════════════════════ */
+document.querySelectorAll('.c-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.c-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    activeTab = t.dataset.tab;
+    renderCenter();
+  });
+});
+document.querySelectorAll('.i-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.i-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    activeITab = t.dataset.itab;
+    renderRight();
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════ */
+load();
+if (G.log.length === 0) {
+  addLog('The Republic has been founded. The world watches.', 'gold');
+  addLog('Enact policies from the council to begin growing.', '');
+  addLog('Monitor rival nations — some will grow faster than you.', 'info');
+}
+renderAll();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

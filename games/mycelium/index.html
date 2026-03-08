@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mycelium — IdleRush</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#030602;--bg2:#060a03;--surface:#0c1305;--surface2:#101a06;
+  --border:rgba(120,255,80,0.07);--border2:rgba(120,255,80,0.18);
+  --text:#c8e8b0;--muted:#4a7030;--dim:#2a4018;
+  --lime:#78ff50;--green:#40e060;--amber:#e0a020;--brown:#8b6020;--blue:#50b8e0;
+  --font-d:'Syne',sans-serif;--font-b:'Mulish',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(60,120,20,0.04),transparent 70%);pointer-events:none;z-index:0}
+
+header{position:relative;z-index:2;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(3,6,2,0.92);backdrop-filter:blur(12px);flex-shrink:0}
+.logo{font-family:var(--font-d);font-size:20px;font-weight:800;letter-spacing:0.04em}
+.logo span{color:var(--lime)}
+.back{font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 10px;transition:color .15s}
+.back:hover{color:var(--text)}
+.biome-badge{font-size:12px;color:var(--amber);background:rgba(224,160,32,0.1);border:1px solid rgba(224,160,32,0.2);padding:4px 12px;border-radius:6px;font-family:var(--font-d);letter-spacing:0.08em}
+
+main{flex:1;display:grid;grid-template-columns:1fr 280px;overflow:hidden;position:relative;z-index:1}
+
+/* FOREST AREA */
+.forest-area{display:flex;flex-direction:column;gap:12px;padding:16px;overflow:hidden;position:relative}
+
+.forest-header{display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.forest-title{font-family:var(--font-d);font-size:16px;font-weight:800;letter-spacing:0.04em}
+.resource-row{display:flex;gap:16px;align-items:center}
+.resource{text-align:right}
+.resource-val{font-family:var(--font-d);font-size:18px;color:var(--lime);line-height:1}
+.resource-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em}
+
+/* GRID */
+.grid-wrap{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center}
+canvas#forest{border-radius:12px;border:1px solid var(--border);cursor:pointer;max-width:100%;max-height:100%}
+
+.spread-bar-wrap{flex-shrink:0}
+.spread-header{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+.spread-bar{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.spread-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--lime));border-radius:4px;transition:width .4s}
+
+/* PANEL */
+.panel{border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border)}
+.panel-tab{flex:1;padding:11px 6px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:0.06em;transition:color .15s,border-color .15s}
+.panel-tab.active{color:var(--lime);border-bottom-color:var(--lime)}
+.panel-content{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.panel-content::-webkit-scrollbar{width:3px}
+.panel-content::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+.upg-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px;display:flex;gap:10px;align-items:flex-start;transition:border-color .15s}
+.upg-card:not(.locked):not(.maxed):hover{border-color:var(--border2);cursor:pointer;background:rgba(120,255,80,0.03)}
+.upg-card.locked{opacity:0.35;cursor:not-allowed}
+.upg-card.maxed{border-color:rgba(120,255,80,0.18)}
+.upg-icon{font-size:26px;flex-shrink:0;width:34px;text-align:center}
+.upg-info{flex:1}
+.upg-name{font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:5px}
+.upg-lvl{font-size:10px;color:var(--lime);background:rgba(120,255,80,0.1);padding:1px 5px;border-radius:3px}
+.upg-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.upg-cost{font-family:var(--font-d);font-size:12px;color:var(--amber);flex-shrink:0}
+
+/* BIOME SELECT */
+.biome-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .15s}
+.biome-card:hover{border-color:var(--border2)}
+.biome-card.active{border-color:var(--lime);background:rgba(120,255,80,0.05)}
+.biome-name{font-family:var(--font-d);font-size:14px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.biome-desc{font-size:11px;color:var(--muted);line-height:1.4}
+.biome-bonus{font-size:11px;color:var(--lime);margin-top:6px}
+.biome-locked{opacity:0.3;cursor:not-allowed}
+
+.prestige-wrap{padding:12px;border-top:1px solid var(--border);flex-shrink:0}
+.prestige-btn{width:100%;padding:11px;background:linear-gradient(135deg,rgba(120,255,80,0.1),rgba(64,224,96,0.06));border:1px solid rgba(120,255,80,0.2);border-radius:10px;color:var(--lime);font-family:var(--font-d);font-size:15px;letter-spacing:0.06em;transition:all .15s}
+.prestige-btn:hover:not(:disabled){box-shadow:0 0 16px rgba(120,255,80,0.15);background:rgba(120,255,80,0.16)}
+.prestige-btn:disabled{opacity:0.3;cursor:not-allowed}
+.prestige-info{font-size:11px;color:var(--dim);text-align:center;margin-top:6px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--lime);color:var(--text);padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;z-index:100;animation:toastAnim 2.5s ease forwards;pointer-events:none}
+@keyframes toastAnim{0%{opacity:0;transform:translateX(-50%) translateY(8px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+
+@media(max-width:640px){main{grid-template-columns:1fr;grid-template-rows:1fr 45vh}html,body{overflow:auto}.panel{border-left:none;border-top:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<header>
+  <a href="../../index.html" class="back">← IdleRush</a>
+  <div class="logo">MYCE<span>LIUM</span></div>
+  <div class="biome-badge" id="biomeBadge">🌲 TEMPERATE FOREST</div>
+</header>
+<main>
+  <div class="forest-area">
+    <div class="forest-header">
+      <div class="forest-title" id="forestTitle">Underground Network</div>
+      <div class="resource-row">
+        <div class="resource"><div class="resource-val" id="sporeCount">0</div><div class="resource-label">Spores</div></div>
+        <div class="resource"><div class="resource-val" id="networkSize">0</div><div class="resource-label">Nodes</div></div>
+        <div class="resource"><div class="resource-val" id="sporeRate">0/s</div><div class="resource-label">Rate</div></div>
+      </div>
+    </div>
+    <div class="grid-wrap"><canvas id="forest" width="360" height="300"></canvas></div>
+    <div class="spread-bar-wrap">
+      <div class="spread-header"><span id="spreadLabel">Spread Progress</span><span id="spreadVal">0%</span></div>
+      <div class="spread-bar"><div class="spread-fill" id="spreadFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-tabs">
+      <button class="panel-tab active" data-tab="upgrades">Network</button>
+      <button class="panel-tab" data-tab="biomes">Biomes</button>
+    </div>
+    <div class="panel-content" id="panelContent"></div>
+    <div class="prestige-wrap">
+      <button class="prestige-btn" id="prestigeBtn" disabled>🍄 SPORULATE</button>
+      <div class="prestige-info" id="prestigeInfo">Cover 80% of forest to sporulate</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const SAVE='mycelium_v1';
+const COLS=18,ROWS=15;
+
+const BIOMES=[
+  {id:'temperate',name:'Temperate Forest',emoji:'🌲',desc:'Mixed deciduous trees. Balanced nutrients and spread speed.',bonus:'Balanced growth',mult:1,unlockRuns:0},
+  {id:'rainforest',name:'Rainforest',emoji:'🌴',desc:'Dense canopy, rich soil. High spore yield but slow spread.',bonus:'×2 spore yield, ×0.7 spread',mult:1.5,unlockRuns:1},
+  {id:'arctic',name:'Arctic Tundra',emoji:'🏔️',desc:'Frozen ground, sparse trees. Slow but massive multipliers.',bonus:'×3 everything after 10s warmup',mult:2.5,unlockRuns:2},
+  {id:'cave',name:'Deep Cave System',emoji:'🕳️',desc:'No sunlight. Relies entirely on decaying matter.',bonus:'×5 yield, no passive spread — click only',mult:5,unlockRuns:3},
+];
+
+const UPGRADES=[
+  {id:'hyphae',name:'Hyphae Threads',icon:'🕸️',desc:'Thinner threads spread faster',baseCost:30,baseRate:0.1,mult:1.4,max:20},
+  {id:'enzyme',name:'Enzyme Release',icon:'⚗️',desc:'Digest nutrients faster',baseCost:80,baseRate:0.4,mult:1.45,max:15},
+  {id:'root',name:'Root Symbiosis',icon:'🌱',desc:'Partner with tree roots for mutual gain',baseCost:300,baseRate:1.2,mult:1.5,max:10},
+  {id:'spore',name:'Spore Burst',icon:'💨',desc:'Wind-dispersed spore clouds',baseCost:1200,baseRate:3.5,mult:1.55,max:8},
+  {id:'truffle',name:'Truffle Network',icon:'🍄',desc:'Deep underground connections',baseCost:5000,baseRate:10,mult:1.6,max:6},
+  {id:'myco',name:'Mycoprotein Factory',icon:'🏭',desc:'Mass-produce fungal proteins',baseCost:20000,baseRate:30,mult:1.65,max:5},
+];
+
+// Grid state: 0=soil, 1=mycelium, 2=tree(healthy), 3=tree(sick), 4=rock
+let grid=[];
+let treeHealth={};
+
+let state={
+  spores:0,totalSpores:0,prestige:0,biome:'temperate',unlockedBiomes:['temperate'],
+  upgrades:Object.fromEntries(UPGRADES.map(u=>[u.id,0])),
+  mult:1,
+};
+let activeTab='upgrades';
+
+function load(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s){state={...state,...s};if(!state.unlockedBiomes)state.unlockedBiomes=['temperate']}}catch{}}
+function save(){localStorage.setItem(SAVE,JSON.stringify(state))}
+
+function getBiome(){return BIOMES.find(b=>b.id===state.biome)||BIOMES[0]}
+
+function initGrid(){
+  grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+  treeHealth={};
+  // Seed center mycelium
+  const cy=Math.floor(ROWS/2),cx=Math.floor(COLS/2);
+  grid[cy][cx]=1;
+  // Place trees
+  const treeCount=20+state.prestige*3;
+  for(let i=0;i<treeCount;i++){
+    const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);
+    if(grid[r][c]===0){grid[r][c]=2;treeHealth[r+'_'+c]=100}
+  }
+  // Rocks
+  for(let i=0;i<8;i++){
+    const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);
+    if(grid[r][c]===0)grid[r][c]=4;
+  }
+}
+
+const canvas=document.getElementById('forest');
+const ctx=canvas.getContext('2d');
+const CW=canvas.width/COLS,CH=canvas.height/ROWS;
+
+const CELL_COLORS={
+  0:'#0a1205',1:'#2a5010',2:'#1a4010',3:'#4a2808',4:'#2a2010'
+};
+const CELL_EMOJI={2:'🌲',3:'🍂',4:'🪨'};
+
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const cell=grid[r][c];
+      ctx.fillStyle=CELL_COLORS[cell]||CELL_COLORS[0];
+      ctx.fillRect(c*CW,r*CH,CW-1,CH-1);
+      if(cell===1){
+        // Mycelium glow
+        ctx.fillStyle='rgba(120,255,80,0.15)';
+        ctx.fillRect(c*CW,r*CH,CW-1,CH-1);
+        // Tendrils
+        ctx.strokeStyle='rgba(120,255,80,0.3)';ctx.lineWidth=0.5;
+        ctx.beginPath();ctx.moveTo(c*CW,r*CH+CH/2);ctx.lineTo((c+1)*CW-1,r*CH+CH/2);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(c*CW+CW/2,r*CH);ctx.lineTo(c*CW+CW/2,(r+1)*CH-1);ctx.stroke();
+      }
+      if(CELL_EMOJI[cell]){
+        ctx.font=`${Math.min(CW,CH)*0.65}px serif`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(CELL_EMOJI[cell],c*CW+CW/2,r*CH+CH/2);
+      }
+    }
+  }
+  // Border
+  ctx.strokeStyle='rgba(120,255,80,0.12)';ctx.lineWidth=1;
+  ctx.strokeRect(0,0,canvas.width,canvas.height);
+}
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+  const cc=Math.floor(mx/CW),cr=Math.floor(my/CH);
+  if(cr<0||cr>=ROWS||cc<0||cc>=COLS)return;
+  // Try to spread to clicked cell
+  if(grid[cr][cc]===0||grid[cr][cc]===2){
+    if(hasAdjacentMycelium(cr,cc)||state.spores>=50){
+      if(!hasAdjacentMycelium(cr,cc)){state.spores-=50;state.totalSpores=Math.max(0,state.totalSpores)}
+      spreadTo(cr,cc);
+    }
+  }
+});
+
+function hasAdjacentMycelium(r,c){
+  const dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+  for(const [dr,dc] of dirs){
+    const nr=r+dr,nc=c+dc;
+    if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&grid[nr][nc]===1)return true;
+  }
+  return false;
+}
+
+function spreadTo(r,c){
+  if(grid[r][c]===2){
+    // Feeding on tree — nurture it
+    const key=r+'_'+c;
+    treeHealth[key]=Math.min(100,(treeHealth[key]||50)+20);
+    toast('🌱 Symbiosis with tree — nutrients gained!');
+  }
+  grid[r][c]=1;
+}
+
+function autoSpread(){
+  const biome=getBiome();
+  if(biome.id==='cave')return; // cave is click-only
+  const rate=getSpreadRate()*0.1;
+  if(Math.random()>rate)return;
+  const myCells=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(grid[r][c]===1)myCells.push([r,c]);
+  if(!myCells.length)return;
+  const [r,c]=myCells[Math.floor(Math.random()*myCells.length)];
+  const dirs=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+  for(const [dr,dc] of shuffled(dirs)){
+    const nr=r+dr,nc=c+dc;
+    if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&(grid[nr][nc]===0||grid[nr][nc]===2)){
+      spreadTo(nr,nc);break;
+    }
+  }
+}
+
+function shuffled(arr){return arr.slice().sort(()=>Math.random()-.5)}
+
+function getMyceliumCount(){let n=0;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(grid[r][c]===1)n++;return n}
+function getTotalCells(){return ROWS*COLS-countRocks()}
+function countRocks(){let n=0;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(grid[r][c]===4)n++;return n}
+
+function getSporeRate(){
+  let r=0;
+  const biome=getBiome();
+  for(const u of UPGRADES){const l=state.upgrades[u.id]||0;if(l>0)r+=l*u.baseRate}
+  r*=state.mult*biome.mult;
+  if(biome.id==='rainforest')r*=2;
+  if(biome.id==='arctic')r*=3;
+  if(biome.id==='cave')r*=5;
+  const treeMult=1+countHealthyTrees()*0.05;
+  return r*treeMult;
+}
+function getSpreadRate(){
+  let r=0.05;
+  for(const u of UPGRADES){const l=state.upgrades[u.id]||0;r+=l*0.02}
+  r*=state.mult;
+  const biome=getBiome();
+  if(biome.id==='rainforest')r*=0.7;
+  if(biome.id==='arctic')r*=0.4;
+  return r;
+}
+function countHealthyTrees(){let n=0;for(const v of Object.values(treeHealth))if(v>60)n++;return n}
+function getUpgCost(u){return Math.floor(u.baseCost*Math.pow(u.mult,state.upgrades[u.id]||0))}
+
+function fmt(n){
+  if(n>=1e9)return(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return Math.floor(n).toLocaleString();
+}
+
+function updateUI(){
+  const mCount=getMyceliumCount(),total=getTotalCells();
+  const pct=Math.round((mCount/total)*100);
+  document.getElementById('sporeCount').textContent=fmt(state.spores);
+  document.getElementById('networkSize').textContent=mCount;
+  document.getElementById('sporeRate').textContent=fmt(getSporeRate())+'/s';
+  document.getElementById('spreadVal').textContent=pct+'%';
+  document.getElementById('spreadFill').style.width=pct+'%';
+  document.getElementById('biomeBadge').textContent=getBiome().emoji+' '+getBiome().name.toUpperCase();
+  const canPrestige=pct>=80;
+  document.getElementById('prestigeBtn').disabled=!canPrestige;
+  document.getElementById('prestigeInfo').textContent=canPrestige?'Release spores to colonise a new biome!':'Cover '+80+'% of forest to sporulate ('+pct+'%)';
+  if(activeTab==='upgrades')renderUpgrades();
+  save();
+}
+
+function renderUpgrades(){
+  const panel=document.getElementById('panelContent');
+  panel.innerHTML='';
+  for(const u of UPGRADES){
+    const lvl=state.upgrades[u.id]||0,cost=getUpgCost(u),maxed=lvl>=u.max,locked=!maxed&&state.spores<cost;
+    const div=document.createElement('div');div.className='upg-card'+(maxed?' maxed':locked?' locked':'');
+    div.innerHTML=`<div class="upg-icon">${u.icon}</div><div class="upg-info"><div class="upg-name">${u.name}${lvl>0?`<span class="upg-lvl">Lv${lvl}</span>`:''}</div><div class="upg-desc">${u.desc}</div></div><div class="upg-cost">${maxed?'MAX':'🍄 '+fmt(cost)}</div>`;
+    if(!maxed&&!locked)div.addEventListener('click',()=>{const c=getUpgCost(u);if(state.spores<c)return;state.spores-=c;state.upgrades[u.id]=(state.upgrades[u.id]||0)+1;toast(u.icon+' '+u.name+' upgraded!');updateUI()});
+    panel.appendChild(div);
+  }
+}
+
+function renderBiomes(){
+  const panel=document.getElementById('panelContent');
+  panel.innerHTML='';
+  for(const b of BIOMES){
+    const unlocked=state.unlockedBiomes.includes(b.id)||b.unlockRuns<=state.prestige;
+    const div=document.createElement('div');
+    div.className='biome-card'+(state.biome===b.id?' active':'')+(unlocked?'':' biome-locked');
+    div.innerHTML=`<div class="biome-name">${b.emoji} ${b.name}</div><div class="biome-desc">${b.desc}</div><div class="biome-bonus">✦ ${b.bonus}</div>${!unlocked?`<div style="font-size:11px;color:var(--amber);margin-top:6px">Unlock after ${b.unlockRuns} prestige runs</div>`:''}`;
+    if(unlocked)div.addEventListener('click',()=>{state.biome=b.id;if(!state.unlockedBiomes.includes(b.id))state.unlockedBiomes.push(b.id);renderBiomes();updateUI()});
+    panel.appendChild(div);
+  }
+}
+
+document.getElementById('prestigeBtn').addEventListener('click',()=>{
+  state.prestige+=1;state.mult=1+state.prestige*0.3;
+  state.spores=0;state.upgrades=Object.fromEntries(UPGRADES.map(u=>[u.id,0]));
+  initGrid();toast('🍄 Sporulated! New forest colonised — Run '+state.prestige);
+  updateUI();
+  activeTab='upgrades';document.querySelectorAll('.panel-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  renderUpgrades();
+});
+
+document.querySelectorAll('.panel-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.panel-tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');activeTab=t.dataset.tab;
+    if(activeTab==='upgrades')renderUpgrades();else renderBiomes();
+  });
+});
+
+function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove())}
+
+let last=performance.now();
+function tick(now){
+  const dt=(now-last)/1000;last=now;
+  const rate=getSporeRate();
+  if(rate>0){state.spores+=rate*dt;state.totalSpores+=rate*dt}
+  autoSpread();
+  drawGrid();
+  document.getElementById('sporeCount').textContent=fmt(state.spores);
+  document.getElementById('sporeRate').textContent=fmt(rate)+'/s';
+  requestAnimationFrame(tick);
+}
+
+load();initGrid();updateUI();renderUpgrades();requestAnimationFrame(tick);setInterval(save,10000);
+</script>
+</body>
+</html>
