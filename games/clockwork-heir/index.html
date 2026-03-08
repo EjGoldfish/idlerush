@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Clockwork Heir — IdleRush</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080604;--bg2:#0e0a06;--surface:#181008;--surface2:#201408;
+  --border:rgba(200,150,60,0.08);--border2:rgba(200,150,60,0.22);
+  --text:#e8d8b0;--muted:#806030;--dim:#4a3010;
+  --gold:#e8a820;--amber:#c07010;--copper:#b06020;--cream:#f0e0b0;--red:#c04030;
+  --font-d:'Playfair Display',serif;--font-b:'Mulish',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* Wood grain texture */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(90deg,rgba(180,100,20,0) 0px,rgba(180,100,20,0) 3px,rgba(180,100,20,0.012) 3px,rgba(180,100,20,0.012) 6px);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 100%,rgba(200,140,40,0.04),transparent 70%);pointer-events:none;z-index:0}
+
+header{position:relative;z-index:2;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(8,6,4,0.92);backdrop-filter:blur(12px);flex-shrink:0}
+.logo{font-family:var(--font-d);font-size:20px;font-weight:900;letter-spacing:0.02em;font-style:italic}
+.logo span{color:var(--gold)}
+.back{font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 10px;transition:color .15s;font-family:var(--font-b)}
+.back:hover{color:var(--text)}
+.gold-display{font-family:var(--font-d);font-size:18px;color:var(--gold);letter-spacing:0.03em}
+
+main{flex:1;display:grid;grid-template-columns:1fr 300px;overflow:hidden;position:relative;z-index:1}
+
+/* WORKSHOP */
+.workshop{display:flex;flex-direction:column;gap:14px;padding:16px;overflow-y:auto}
+.workshop::-webkit-scrollbar{width:3px}
+.workshop::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+.workshop-header{display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0}
+.workshop-title{font-family:var(--font-d);font-size:20px;font-weight:900;font-style:italic;color:var(--cream)}
+.stats-mini{display:flex;gap:16px}
+.stat-m{text-align:right}
+.stat-m-val{font-family:var(--font-d);font-size:17px;color:var(--gold);line-height:1}
+.stat-m-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em}
+
+/* WORKBENCH — current build */
+.workbench{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:18px}
+.bench-title{font-family:var(--font-d);font-size:14px;font-style:italic;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.bench-title::before{content:'';width:24px;height:1px;background:var(--border2)}
+.wind-row{display:flex;gap:10px;align-items:center}
+.wind-btn{flex:1;padding:12px;background:rgba(232,168,32,0.08);border:1px solid rgba(232,168,32,0.2);border-radius:10px;color:var(--gold);font-family:var(--font-d);font-size:17px;letter-spacing:0.04em;transition:all .15s}
+.wind-btn:hover{background:rgba(232,168,32,0.15);box-shadow:0 0 14px rgba(232,168,32,0.15)}
+.wind-btn:active{transform:scale(0.97)}
+.wind-count{text-align:center;min-width:60px}
+.wind-val{font-family:var(--font-d);font-size:24px;color:var(--gold);line-height:1}
+.wind-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.wind-bar{height:6px;background:var(--surface2);border-radius:3px;margin-top:10px;overflow:hidden}
+.wind-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--gold));border-radius:3px;transition:width .3s}
+
+/* CLOCK SHELF */
+.shelf-title{font-family:var(--font-d);font-size:15px;font-weight:700;font-style:italic;color:var(--cream);margin-top:4px;display:flex;justify-content:space-between;align-items:baseline}
+.shelf-title span{font-size:12px;color:var(--muted);font-style:normal;font-family:var(--font-b)}
+.clock-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+
+.clock-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .15s}
+.clock-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.clock-card.running{border-color:rgba(232,168,32,0.25);animation:tickPulse 1s ease-in-out infinite alternate}
+@keyframes tickPulse{from{box-shadow:0 0 0 rgba(232,168,32,0)}to{box-shadow:0 0 8px rgba(232,168,32,0.12)}}
+.clock-card.ready{border-color:rgba(109,255,144,0.35);background:rgba(109,255,144,0.04)}
+
+.clock-face{font-size:36px;text-align:center;line-height:1;position:relative}
+.clock-status{position:absolute;top:-4px;right:-4px;font-size:12px}
+
+.clock-name{font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--cream);font-style:italic;text-align:center}
+.clock-timer{font-size:11px;color:var(--muted);text-align:center;font-family:'Mulish',sans-serif}
+.clock-timer.ready{color:#6dff90;font-weight:700}
+.clock-reward{font-size:11px;color:var(--gold);text-align:center}
+.clock-progress{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.clock-progress-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--gold));border-radius:2px;transition:width .5s}
+
+.collect-btn{padding:7px 10px;background:rgba(109,255,144,0.1);border:1px solid rgba(109,255,144,0.25);border-radius:7px;color:#6dff90;font-size:12px;font-weight:700;transition:all .15s}
+.collect-btn:hover{background:rgba(109,255,144,0.2)}
+
+/* PANEL */
+.panel{border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border)}
+.panel-tab{flex:1;padding:11px 6px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:0.06em;transition:color .15s,border-color .15s;font-family:var(--font-b)}
+.panel-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.panel-content{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.panel-content::-webkit-scrollbar{width:3px}
+.panel-content::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+/* BLUEPRINT CARD */
+.blueprint{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.blueprint:hover:not(.locked){border-color:var(--border2);background:rgba(232,168,32,0.03)}
+.blueprint.locked{opacity:0.35;cursor:not-allowed}
+.blueprint.building{border-color:rgba(232,168,32,0.3);background:rgba(232,168,32,0.04)}
+.blueprint-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.bp-icon{font-size:26px;flex-shrink:0}
+.bp-name{font-family:var(--font-d);font-size:14px;font-weight:700;font-style:italic;color:var(--cream)}
+.bp-rarity{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:700;letter-spacing:0.06em;font-family:var(--font-b)}
+.rarity-common{background:rgba(150,150,150,0.15);color:#aaa}
+.rarity-rare{background:rgba(77,184,255,0.12);color:#4db8ff}
+.rarity-legendary{background:rgba(232,168,32,0.15);color:var(--gold)}
+.bp-stats{display:flex;justify-content:space-between;font-size:11px;margin-top:6px}
+.bp-time{color:var(--muted)}
+.bp-payout{color:var(--gold);font-weight:700}
+.bp-cost{color:var(--copper)}
+.bp-count{font-size:10px;color:var(--amber);background:rgba(232,168,32,0.1);padding:1px 5px;border-radius:3px;margin-left:auto}
+
+/* UPGRADES */
+.upg-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px;display:flex;gap:10px;align-items:flex-start;transition:border-color .15s}
+.upg-card:not(.locked):not(.maxed):hover{border-color:var(--border2);cursor:pointer;background:rgba(232,168,32,0.03)}
+.upg-card.locked{opacity:0.35;cursor:not-allowed}
+.upg-card.maxed{border-color:rgba(232,168,32,0.18)}
+.upg-icon{font-size:26px;flex-shrink:0;width:34px;text-align:center}
+.upg-info{flex:1}
+.upg-name{font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:5px}
+.upg-lvl{font-size:10px;color:var(--gold);background:rgba(232,168,32,0.1);padding:1px 5px;border-radius:3px}
+.upg-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.upg-cost-label{font-family:var(--font-d);font-size:12px;color:var(--amber);flex-shrink:0}
+
+.prestige-wrap{padding:12px;border-top:1px solid var(--border);flex-shrink:0}
+.prestige-btn{width:100%;padding:11px;background:linear-gradient(135deg,rgba(232,168,32,0.12),rgba(192,112,16,0.08));border:1px solid rgba(232,168,32,0.22);border-radius:10px;color:var(--gold);font-family:var(--font-d);font-size:16px;letter-spacing:0.04em;font-style:italic;transition:all .15s}
+.prestige-btn:hover:not(:disabled){box-shadow:0 0 16px rgba(232,168,32,0.15);background:rgba(232,168,32,0.18)}
+.prestige-btn:disabled{opacity:0.3;cursor:not-allowed}
+.prestige-info{font-size:11px;color:var(--dim);text-align:center;margin-top:6px;font-family:var(--font-b)}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--gold);color:var(--text);padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;z-index:100;animation:toastAnim 2.5s ease forwards;pointer-events:none}
+@keyframes toastAnim{0%{opacity:0;transform:translateX(-50%) translateY(8px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+
+@media(max-width:700px){main{grid-template-columns:1fr;grid-template-rows:1fr 45vh}html,body{overflow:auto}.panel{border-left:none;border-top:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<header>
+  <a href="../../index.html" class="back">← IdleRush</a>
+  <div class="logo"><em>Clockwork</em> <span>Heir</span></div>
+  <div class="gold-display">⚙️ <span id="goldDisplay">0</span> gp</div>
+</header>
+<main>
+  <div class="workshop">
+    <div class="workshop-header">
+      <div>
+        <div class="workshop-title">The Workshop</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Wind mechanisms · Sell timepieces</div>
+      </div>
+      <div class="stats-mini">
+        <div class="stat-m"><div class="stat-m-val" id="incomeRate">0</div><div class="stat-m-label">gp/s passive</div></div>
+        <div class="stat-m"><div class="stat-m-val" id="prestigeCount">0</div><div class="stat-m-label">Prestige</div></div>
+      </div>
+    </div>
+
+    <!-- Workbench -->
+    <div class="workbench">
+      <div class="bench-title">Winding Bench</div>
+      <div class="wind-row">
+        <button class="wind-btn" id="windBtn">⚙️ WIND</button>
+        <div class="wind-count">
+          <div class="wind-val" id="windVal">0</div>
+          <div class="wind-label">Turns</div>
+        </div>
+      </div>
+      <div class="wind-bar"><div class="wind-fill" id="windFill" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:right" id="windHint">Wind to power clocks</div>
+    </div>
+
+    <!-- Clock shelf -->
+    <div class="shelf-title">Clock Shelf <span id="shelfSubtitle">0 clocks running</span></div>
+    <div class="clock-shelf" id="clockShelf"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-tabs">
+      <button class="panel-tab active" data-tab="blueprints">Blueprints</button>
+      <button class="panel-tab" data-tab="upgrades">Crafts</button>
+    </div>
+    <div class="panel-content" id="panelContent"></div>
+    <div class="prestige-wrap">
+      <button class="prestige-btn" id="prestigeBtn" disabled>🏆 Sell the Shop</button>
+      <div class="prestige-info" id="prestigeInfo">Build 5 legendary clocks to sell the shop</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const SAVE='clockwork_v1';
+
+const BLUEPRINTS=[
+  {id:'pocket',name:'Pocket Watch',emoji:'⌚',rarity:'common',cost:50,windNeeded:10,realSeconds:5,payout:120,desc:'A simple brass pocket watch'},
+  {id:'carriage',name:'Carriage Clock',emoji:'🕰️',rarity:'common',cost:200,windNeeded:30,realSeconds:30,payout:600,desc:'Small gilt carriage clock for the mantelpiece'},
+  {id:'wall',name:'Wall Clock',emoji:'🕓',rarity:'rare',cost:800,windNeeded:80,realSeconds:120,payout:3000,desc:'Ornate oak wall clock with chimes'},
+  {id:'grandfather',name:'Grandfather Clock',emoji:'🕰️',rarity:'rare',cost:3500,windNeeded:200,realSeconds:300,payout:15000,desc:'Towering mahogany longcase clock'},
+  {id:'astro',name:'Astronomical Clock',emoji:'🌌',rarity:'legendary',cost:15000,windNeeded:600,realSeconds:600,payout:80000,desc:'Tracks celestial movements with gemstone inlays'},
+  {id:'perpetual',name:'Perpetual Motion Clock',emoji:'♾️',rarity:'legendary',cost:60000,windNeeded:2000,realSeconds:1800,payout:400000,desc:'Runs forever — theoretically impossible. You built one anyway.'},
+];
+
+const UPGRADES=[
+  {id:'lubricate',name:'Fine Lubrication',icon:'🫙',desc:'Clocks tick faster — reduce build time',baseCost:500,timeReduction:0.05,mult:1.5,max:10},
+  {id:'apprentice',name:'Hire Apprentice',icon:'👶',desc:'Auto-winds +1 turn/sec',baseCost:2000,autoWind:1,mult:1.55,max:8},
+  {id:'lathe',name:'Precision Lathe',icon:'🔧',desc:'Boosts payout of all clocks',baseCost:8000,payoutBoost:0.2,mult:1.6,max:8},
+  {id:'guild',name:'Guild Membership',icon:'📜',desc:'Access to rare materials — boosts legendary payouts',baseCost:30000,legBoost:0.5,mult:1.65,max:5},
+  {id:'vault',name:'Gold Vault',icon:'🏦',desc:'Earn passive gold from unsold inventory',baseCost:100000,passiveRate:50,mult:1.7,max:5},
+];
+
+let state={
+  gold:100,totalEarned:0,prestige:0,windTurns:0,
+  clocks:[],legendaryBuilt:0,
+  upgrades:Object.fromEntries(UPGRADES.map(u=>[u.id,0])),
+  mult:1,legendaryCount:0,
+};
+let activeTab='blueprints';
+
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SAVE));
+    if(s){
+      state={...state,...s};
+      // Restore real-time clocks
+      for(const clk of state.clocks){
+        if(clk.startReal&&!clk.ready){
+          const elapsed=(Date.now()-clk.startReal)/1000;
+          clk.progress=Math.min(1,elapsed/clk.realSeconds);
+          if(clk.progress>=1)clk.ready=true;
+        }
+      }
+    }
+  }catch{}
+}
+function save(){localStorage.setItem(SAVE,JSON.stringify(state))}
+
+function getUpgCost(u){return Math.floor(u.baseCost*Math.pow(u.mult,state.upgrades[u.id]||0))}
+function getTimeReduction(){return Math.min(0.7,UPGRADES.find(u=>u.id==='lubricate')&&(state.upgrades['lubricate']||0)*0.05)}
+function getAutoWind(){return(state.upgrades['apprentice']||0)*1}
+function getPayoutMult(){return 1+((state.upgrades['lathe']||0)*0.2)}
+function getLegPayoutMult(){return 1+((state.upgrades['guild']||0)*0.5)}
+function getPassiveRate(){return(state.upgrades['vault']||0)*50*state.mult}
+function getWindNeeded(bp){return Math.ceil(bp.windNeeded*(1-getTimeReduction()))}
+function getBuildTime(bp){return bp.realSeconds*(1-getTimeReduction())}
+function getPayout(bp){
+  let p=bp.payout*getPayoutMult()*state.mult;
+  if(bp.rarity==='legendary')p*=getLegPayoutMult();
+  return Math.floor(p);
+}
+
+function fmt(n){
+  if(n>=1e9)return(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return Math.floor(n).toLocaleString();
+}
+
+function formatTime(secs){
+  if(secs<60)return Math.ceil(secs)+'s';
+  if(secs<3600)return Math.floor(secs/60)+'m '+Math.ceil(secs%60)+'s';
+  return Math.floor(secs/3600)+'h '+Math.floor((secs%3600)/60)+'m';
+}
+
+function formatRealTime(secs){
+  // Real-world time remaining
+  if(secs<60)return Math.ceil(secs)+' sec';
+  if(secs<3600)return Math.floor(secs/60)+' min';
+  return Math.floor(secs/3600)+' hr '+Math.floor((secs%3600)/60)+' min';
+}
+
+// WIND
+document.getElementById('windBtn').addEventListener('click',()=>{
+  state.windTurns+=1+(state.upgrades['lathe']||0);
+  updateUI();
+});
+
+function buildClock(bp){
+  const windNeeded=getWindNeeded(bp);
+  if(state.gold<bp.cost){toast('Not enough gold!');return}
+  if(state.windTurns<windNeeded){toast('Need '+windNeeded+' wind turns!');return}
+  state.gold-=bp.cost;state.windTurns-=windNeeded;
+  const buildTime=getBuildTime(bp);
+  const clk={id:Date.now(),bpId:bp.id,name:bp.name,emoji:bp.emoji,rarity:bp.rarity,
+    realSeconds:buildTime,startReal:Date.now(),progress:0,ready:false,payout:getPayout(bp)};
+  state.clocks.push(clk);
+  toast('⚙️ '+bp.name+' — ticking…');
+  updateUI();
+}
+
+function collectClock(clk){
+  state.gold+=clk.payout;state.totalEarned+=clk.payout;
+  if(clk.rarity==='legendary')state.legendaryCount++;
+  state.clocks=state.clocks.filter(c=>c.id!==clk.id);
+  toast('💰 '+clk.name+' sold for '+fmt(clk.payout)+' gp!');
+  updateUI();
+}
+
+function renderShelf(){
+  const shelf=document.getElementById('clockShelf');
+  shelf.innerHTML='';
+  const running=state.clocks.filter(c=>!c.ready).length;
+  document.getElementById('shelfSubtitle').textContent=running+' clock'+(running!==1?'s':'')+' running';
+
+  if(state.clocks.length===0){
+    shelf.innerHTML='<div style="font-size:13px;color:var(--muted);padding:20px;text-align:center;font-style:italic;grid-column:1/-1">The shelf sits empty. Build something.</div>';
+    return;
+  }
+
+  for(const clk of state.clocks){
+    const div=document.createElement('div');
+    div.className='clock-card'+(clk.ready?' ready':' running');
+    const timeLeft=clk.ready?0:Math.max(0,(clk.realSeconds-(Date.now()-clk.startReal)/1000));
+    div.innerHTML=`
+      <div class="clock-face">${clk.emoji}${clk.ready?'<span class="clock-status">✅</span>':''}</div>
+      <div class="clock-name">${clk.name}</div>
+      <div class="clock-timer ${clk.ready?'ready':''}">${clk.ready?'Ready to collect!':formatRealTime(timeLeft)+' remaining'}</div>
+      <div class="clock-reward">⚙️ ${fmt(clk.payout)} gp</div>
+      ${!clk.ready?`<div class="clock-progress"><div class="clock-progress-fill" style="width:${Math.round(clk.progress*100)}%"></div></div>`:''}
+      ${clk.ready?`<button class="collect-btn" data-id="${clk.id}">Collect</button>`:''}`;
+    div.querySelector('.collect-btn')?.addEventListener('click',()=>collectClock(clk));
+    shelf.appendChild(div);
+  }
+}
+
+function renderBlueprints(){
+  const panel=document.getElementById('panelContent');
+  panel.innerHTML='';
+  for(const bp of BLUEPRINTS){
+    const windNeeded=getWindNeeded(bp),buildTime=getBuildTime(bp),payout=getPayout(bp);
+    const canAfford=state.gold>=bp.cost;
+    const hasWind=state.windTurns>=windNeeded;
+    const alreadyBuilding=state.clocks.some(c=>c.bpId===bp.id&&!c.ready);
+    const locked=!canAfford||!hasWind;
+    const div=document.createElement('div');
+    div.className='blueprint'+(locked?' locked':alreadyBuilding?' building':'');
+    div.innerHTML=`
+      <div class="blueprint-header">
+        <div class="bp-icon">${bp.emoji}</div>
+        <div>
+          <div class="bp-name">${bp.name} <span class="bp-rarity rarity-${bp.rarity}">${bp.rarity.toUpperCase()}</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${bp.desc}</div>
+        </div>
+      </div>
+      <div class="bp-stats">
+        <span class="bp-cost">⚙️ ${windNeeded} winds · ${fmt(bp.cost)} gp</span>
+        <span class="bp-time">⏱ ${formatRealTime(buildTime)}</span>
+      </div>
+      <div class="bp-stats" style="margin-top:4px">
+        <span class="bp-payout">💰 ${fmt(payout)} gp payout</span>
+        ${alreadyBuilding?'<span style="color:var(--amber);font-size:11px">Building…</span>':''}
+      </div>`;
+    if(!locked&&!alreadyBuilding)div.addEventListener('click',()=>buildClock(bp));
+    panel.appendChild(div);
+  }
+}
+
+function renderUpgrades(){
+  const panel=document.getElementById('panelContent');
+  panel.innerHTML='';
+  for(const u of UPGRADES){
+    const lvl=state.upgrades[u.id]||0,cost=getUpgCost(u),maxed=lvl>=u.max,locked=!maxed&&state.gold<cost;
+    const div=document.createElement('div');div.className='upg-card'+(maxed?' maxed':locked?' locked':'');
+    div.innerHTML=`<div class="upg-icon">${u.icon}</div><div class="upg-info"><div class="upg-name">${u.name}${lvl>0?`<span class="upg-lvl">Lv${lvl}</span>`:''}</div><div class="upg-desc">${u.desc}</div></div><div class="upg-cost-label">${maxed?'MAX':'⚙️ '+fmt(cost)}</div>`;
+    if(!maxed&&!locked)div.addEventListener('click',()=>{const c=getUpgCost(u);if(state.gold<c)return;state.gold-=c;state.upgrades[u.id]=(state.upgrades[u.id]||0)+1;toast(u.icon+' '+u.name+' upgraded!');updateUI()});
+    panel.appendChild(div);
+  }
+}
+
+document.querySelectorAll('.panel-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.panel-tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');activeTab=t.dataset.tab;
+    if(activeTab==='blueprints')renderBlueprints();else renderUpgrades();
+  });
+});
+
+document.getElementById('prestigeBtn').addEventListener('click',()=>{
+  state.prestige+=1;state.mult=1+state.prestige*0.4;
+  state.gold=100;state.windTurns=0;state.clocks=[];state.legendaryCount=0;
+  state.upgrades=Object.fromEntries(UPGRADES.map(u=>[u.id,0]));
+  toast('🏆 Shop sold! Prestige '+state.prestige+' — ×'+state.mult.toFixed(1)+' all payouts!');
+  updateUI();
+  activeTab='blueprints';document.querySelectorAll('.panel-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  renderBlueprints();
+});
+
+function updateUI(){
+  document.getElementById('goldDisplay').textContent=fmt(state.gold);
+  document.getElementById('incomeRate').textContent=fmt(getPassiveRate());
+  document.getElementById('prestigeCount').textContent=state.prestige;
+  const windNeededMin=getWindNeeded(BLUEPRINTS[0]);
+  const maxWind=500;
+  document.getElementById('windFill').style.width=Math.min(100,(state.windTurns/maxWind)*100)+'%';
+  document.getElementById('windVal').textContent=state.windTurns;
+  document.getElementById('windHint').textContent='Min needed: '+windNeededMin+' winds (cheapest clock)';
+  const canPrestige=state.legendaryCount>=5;
+  document.getElementById('prestigeBtn').disabled=!canPrestige;
+  document.getElementById('prestigeInfo').textContent=canPrestige?'Sell the shop for a permanent payout multiplier!':'Collect '+5+' legendary clocks to sell up ('+state.legendaryCount+'/5)';
+  renderShelf();
+  if(activeTab==='blueprints')renderBlueprints();else renderUpgrades();
+  save();
+}
+
+function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove())}
+
+// Clock progress tick
+let last=performance.now();
+function tick(now){
+  const dt=(now-last)/1000;last=now;
+
+  // Update real-time clock progress
+  let anyReady=false;
+  for(const clk of state.clocks){
+    if(!clk.ready){
+      const elapsed=(Date.now()-clk.startReal)/1000;
+      clk.progress=Math.min(1,elapsed/clk.realSeconds);
+      if(clk.progress>=1){clk.ready=true;anyReady=true;toast('⏰ '+clk.name+' is ready!')}
+    }
+  }
+
+  // Auto-wind
+  const aw=getAutoWind();
+  if(aw>0)state.windTurns+=aw*dt;
+
+  // Passive income
+  const passive=getPassiveRate();
+  if(passive>0){state.gold+=passive*dt;state.totalEarned+=passive*dt}
+
+  document.getElementById('goldDisplay').textContent=fmt(state.gold);
+  document.getElementById('windVal').textContent=Math.floor(state.windTurns);
+  if(anyReady)renderShelf();
+
+  requestAnimationFrame(tick);
+}
+
+load();updateUI();if(activeTab==='blueprints')renderBlueprints();requestAnimationFrame(tick);setInterval(save,10000);
+</script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Cookie Cosmos — IdleRush</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #08060f;
+      --bg2:    #100d1a;
+      --panel:  #15112a;
+      --border: rgba(255,255,255,0.08);
+      --text:   #e8e4f8;
+      --muted:  #7b7299;
+      --accent: #c084fc;
+      --gold:   #fbbf24;
+      --teal:   #2dd4bf;
+      --font-d: 'Bebas Neue', sans-serif;
+      --font-b: 'DM Sans', sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+    /* Stars */
+    #stars{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+    .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite alternate}
+    @keyframes twinkle{from{opacity:0.1}to{opacity:0.8}}
+
+    /* Header */
+    header{position:relative;z-index:2;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(8,6,15,0.85);backdrop-filter:blur(12px)}
+    .logo{font-family:var(--font-d);font-size:26px;letter-spacing:0.05em}
+    .logo span{color:var(--accent)}
+    .header-stats{display:flex;gap:20px;font-size:13px;color:var(--muted)}
+    .header-stats strong{color:var(--gold);font-weight:700}
+    .back-link{font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;transition:color 0.15s,border-color 0.15s}
+    .back-link:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
+
+    /* Main layout */
+    main{position:relative;z-index:1;flex:1;display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+
+    /* Left: clicker */
+    .clicker-area{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;overflow:hidden;position:relative}
+
+    .total-display{text-align:center}
+    .cookie-count{font-family:var(--font-d);font-size:clamp(36px,5vw,60px);letter-spacing:0.03em;color:var(--gold);line-height:1}
+    .cookie-label{font-size:13px;color:var(--muted);margin-top:2px}
+    .cps-display{font-size:13px;color:var(--muted);margin-top:4px}
+    .cps-display span{color:var(--teal)}
+
+    .cookie-btn-wrap{position:relative}
+    .cookie-btn{
+      width:clamp(140px,18vw,200px);height:clamp(140px,18vw,200px);
+      border-radius:50%;border:none;cursor:pointer;
+      background:radial-gradient(circle at 38% 35%, #fde68a, #f59e0b 40%, #b45309 80%);
+      box-shadow:0 0 40px rgba(251,191,36,0.35), 0 0 80px rgba(251,191,36,0.1), inset 0 -6px 20px rgba(0,0,0,0.3);
+      font-size:clamp(60px,9vw,90px);
+      transition:transform 0.06s, box-shadow 0.06s;
+      position:relative;
+      user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .cookie-btn::before{content:'';position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.3), transparent 60%);pointer-events:none}
+    .cookie-btn:active{transform:scale(0.93);box-shadow:0 0 20px rgba(251,191,36,0.25), inset 0 -3px 12px rgba(0,0,0,0.4)}
+
+    /* Floating +1 animations */
+    .float-text{
+      position:absolute;pointer-events:none;font-family:var(--font-d);
+      font-size:22px;color:var(--gold);text-shadow:0 0 8px rgba(251,191,36,0.6);
+      animation:floatUp 0.85s ease-out forwards;
+      z-index:10;
+    }
+    @keyframes floatUp{
+      0%{opacity:1;transform:translateY(0) scale(1)}
+      100%{opacity:0;transform:translateY(-70px) scale(0.7)}
+    }
+
+    /* Milestones */
+    .milestones{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:400px}
+    .milestone{font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:var(--panel);transition:all 0.3s}
+    .milestone.unlocked{border-color:var(--accent);color:var(--accent);background:rgba(192,132,252,0.1);box-shadow:0 0 8px rgba(192,132,252,0.2)}
+
+    /* Right: upgrades */
+    .upgrades-panel{border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden}
+    .panel-header{padding:16px;border-bottom:1px solid var(--border);font-family:var(--font-d);font-size:18px;letter-spacing:0.06em;color:var(--accent)}
+
+    .upgrades-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+    .upgrades-list::-webkit-scrollbar{width:4px}
+    .upgrades-list::-webkit-scrollbar-track{background:transparent}
+    .upgrades-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+    .upgrade-btn{
+      display:flex;align-items:center;gap:12px;
+      background:var(--panel);border:1px solid var(--border);border-radius:10px;
+      padding:12px;cursor:pointer;text-align:left;width:100%;
+      transition:all 0.15s;position:relative;overflow:hidden;
+    }
+    .upgrade-btn:disabled{opacity:0.4;cursor:not-allowed}
+    .upgrade-btn:not(:disabled):hover{border-color:var(--accent);background:rgba(192,132,252,0.08);transform:translateX(2px)}
+
+    .upgrade-icon{font-size:26px;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(255,255,255,0.2))}
+    .upgrade-info{flex:1;min-width:0}
+    .upgrade-name{font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px}
+    .upgrade-count{font-size:11px;color:var(--accent);background:rgba(192,132,252,0.15);border-radius:4px;padding:1px 6px}
+    .upgrade-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+    .upgrade-cost{font-family:var(--font-d);font-size:15px;color:var(--gold);flex-shrink:0;letter-spacing:0.03em}
+
+    /* Prestige */
+    .prestige-wrap{padding:12px;border-top:1px solid var(--border)}
+    .prestige-btn{
+      width:100%;padding:12px;border-radius:10px;
+      background:linear-gradient(135deg,rgba(192,132,252,0.15),rgba(45,212,191,0.1));
+      border:1px solid rgba(192,132,252,0.3);
+      color:var(--accent);font-family:var(--font-d);font-size:17px;
+      letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;
+    }
+    .prestige-btn:hover{background:linear-gradient(135deg,rgba(192,132,252,0.25),rgba(45,212,191,0.15));box-shadow:0 0 16px rgba(192,132,252,0.2)}
+    .prestige-btn:disabled{opacity:0.3;cursor:not-allowed}
+    .prestige-info{font-size:11px;color:var(--muted);text-align:center;margin-top:6px}
+
+    /* Notification toast */
+    .toast{
+      position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:var(--panel);border:1px solid var(--accent);
+      color:var(--text);padding:10px 20px;border-radius:10px;
+      font-size:13px;font-weight:600;
+      box-shadow:0 8px 24px rgba(0,0,0,0.5),0 0 12px rgba(192,132,252,0.3);
+      z-index:100;animation:toastAnim 2.5s ease forwards;
+      pointer-events:none;
+    }
+    @keyframes toastAnim{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+
+    @media(max-width:640px){
+      main{grid-template-columns:1fr;grid-template-rows:1fr auto}
+      .upgrades-panel{border-left:none;border-top:1px solid var(--border);max-height:42vh}
+      html,body{overflow:auto}
+    }
+  </style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<header>
+  <a href="../../index.html" class="back-link">← IdleRush</a>
+  <div class="logo">COOKIE <span>COSMOS</span></div>
+  <div class="header-stats">
+    <span>Prestige: <strong id="prestigeCount">0</strong>⭐</span>
+    <span>Multiplier: <strong id="multDisplay">×1</strong></span>
+  </div>
+</header>
+
+<main>
+  <!-- Left: clicker -->
+  <div class="clicker-area">
+    <div class="total-display">
+      <div class="cookie-count" id="cookieCount">0</div>
+      <div class="cookie-label">🍪 Cosmic Cookies</div>
+      <div class="cps-display">+<span id="cpsDisplay">0</span> per second</div>
+    </div>
+
+    <div class="cookie-btn-wrap" id="btnWrap">
+      <button class="cookie-btn" id="cookieBtn" aria-label="Bake cookie">🍪</button>
+    </div>
+
+    <div class="milestones" id="milestones"></div>
+  </div>
+
+  <!-- Right: upgrades -->
+  <div class="upgrades-panel">
+    <div class="panel-header">⬆️ UPGRADES</div>
+    <div class="upgrades-list" id="upgradesList"></div>
+    <div class="prestige-wrap">
+      <button class="prestige-btn" id="prestigeBtn" disabled>✨ PRESTIGE</button>
+      <div class="prestige-info" id="prestigeInfo">Reach 1,000,000 cookies to prestige</div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+const SAVE_KEY = 'cookie_cosmos_v2';
+const PRESTIGE_THRESHOLD = 1_000_000;
+
+const UPGRADES = [
+  { id:'cursor',  name:'Star Cursor',     icon:'🖱️',  desc:'Auto-clicks once/sec',         baseCost:15,    baseCps:0.1,  cpc:0 },
+  { id:'planet',  name:'Cookie Planet',   icon:'🪐',  desc:'A whole planet of dough',       baseCost:100,   baseCps:0.5,  cpc:0 },
+  { id:'factory', name:'Dough Factory',   icon:'🏭',  desc:'Industrial-scale baking',       baseCost:500,   baseCps:2,    cpc:0 },
+  { id:'rocket',  name:'Cookie Rocket',   icon:'🚀',  desc:'Launch cookies into orbit',     baseCost:2000,  baseCps:8,    cpc:0 },
+  { id:'alien',   name:'Alien Bakery',    icon:'👽',  desc:'Extraterrestrial recipes',      baseCost:8000,  baseCps:25,   cpc:0 },
+  { id:'galaxy',  name:'Galaxy Oven',     icon:'🌌',  desc:'Bakes across star systems',     baseCost:30000, baseCps:80,   cpc:0 },
+  { id:'portal',  name:'Cookie Portal',   icon:'🌀',  desc:'Imports cookies from parallel universes', baseCost:100000, baseCps:250, cpc:0},
+];
+
+const MILESTONES = [
+  {threshold:100,     label:'First Hundred', emoji:'🌱'},
+  {threshold:1000,    label:'Kilocookie',    emoji:'⭐'},
+  {threshold:10000,   label:'Cookie Storm',  emoji:'🌪️'},
+  {threshold:100000,  label:'Megasnack',     emoji:'🏆'},
+  {threshold:1000000, label:'Cosmic Baker',  emoji:'🌌'},
+];
+
+let state = {
+  cookies: 0,
+  totalEver: 0,
+  prestige: 0,
+  mult: 1,
+  upgrades: Object.fromEntries(UPGRADES.map(u => [u.id, 0])),
+};
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (saved) state = { ...state, ...saved };
+  } catch {}
+}
+function saveState() {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+}
+
+// ── Computed ───────────────────────────────────────────────────
+function getCps() {
+  let cps = 0;
+  for (const u of UPGRADES) cps += (state.upgrades[u.id] || 0) * u.baseCps;
+  return cps * state.mult;
+}
+function getClickValue() {
+  return Math.max(1, Math.floor(getCps() * 0.1 + 1)) * state.mult;
+}
+function getUpgradeCost(u) {
+  const owned = state.upgrades[u.id] || 0;
+  return Math.floor(u.baseCost * Math.pow(1.18, owned));
+}
+
+// ── Format numbers ─────────────────────────────────────────────
+function fmt(n) {
+  if (n >= 1e12) return (n/1e12).toFixed(2) + 'T';
+  if (n >= 1e9)  return (n/1e9).toFixed(2)  + 'B';
+  if (n >= 1e6)  return (n/1e6).toFixed(2)  + 'M';
+  if (n >= 1e3)  return (n/1e3).toFixed(1)  + 'K';
+  return Math.floor(n).toLocaleString();
+}
+
+// ── DOM refs ───────────────────────────────────────────────────
+const cookieBtn    = document.getElementById('cookieBtn');
+const cookieCountEl= document.getElementById('cookieCount');
+const cpsEl        = document.getElementById('cpsDisplay');
+const upgradesEl   = document.getElementById('upgradesList');
+const milestonesEl = document.getElementById('milestones');
+const prestigeBtn  = document.getElementById('prestigeBtn');
+const prestigeInfo = document.getElementById('prestigeInfo');
+const prestigeCountEl = document.getElementById('prestigeCount');
+const multDisplayEl   = document.getElementById('multDisplay');
+const btnWrap      = document.getElementById('btnWrap');
+
+// ── Click handler ──────────────────────────────────────────────
+cookieBtn.addEventListener('click', e => {
+  const val = getClickValue();
+  state.cookies += val;
+  state.totalEver += val;
+
+  // Float text
+  const span = document.createElement('span');
+  span.className = 'float-text';
+  span.textContent = '+' + fmt(val);
+  const rect = btnWrap.getBoundingClientRect();
+  span.style.left = (e.clientX - rect.left - 20) + 'px';
+  span.style.top  = (e.clientY - rect.top  - 10) + 'px';
+  btnWrap.appendChild(span);
+  span.addEventListener('animationend', () => span.remove());
+
+  updateUI();
+});
+
+// ── Upgrades ───────────────────────────────────────────────────
+function buildUpgrades() {
+  upgradesEl.innerHTML = '';
+  for (const u of UPGRADES) {
+    const cost  = getUpgradeCost(u);
+    const owned = state.upgrades[u.id] || 0;
+    const canAfford = state.cookies >= cost;
+
+    const btn = document.createElement('button');
+    btn.className = 'upgrade-btn';
+    btn.disabled = !canAfford;
+    btn.innerHTML = `
+      <div class="upgrade-icon">${u.icon}</div>
+      <div class="upgrade-info">
+        <div class="upgrade-name">${u.name} ${owned > 0 ? `<span class="upgrade-count">×${owned}</span>` : ''}</div>
+        <div class="upgrade-desc">${u.desc}</div>
+      </div>
+      <div class="upgrade-cost">🍪 ${fmt(cost)}</div>`;
+    btn.addEventListener('click', () => buyUpgrade(u));
+    upgradesEl.appendChild(btn);
+  }
+}
+
+function buyUpgrade(u) {
+  const cost = getUpgradeCost(u);
+  if (state.cookies < cost) return;
+  state.cookies -= cost;
+  state.upgrades[u.id] = (state.upgrades[u.id] || 0) + 1;
+  toast(`${u.icon} ${u.name} upgraded!`);
+  updateUI();
+}
+
+// ── Milestones ─────────────────────────────────────────────────
+function updateMilestones() {
+  milestonesEl.innerHTML = '';
+  for (const m of MILESTONES) {
+    const span = document.createElement('span');
+    span.className = 'milestone' + (state.totalEver >= m.threshold ? ' unlocked' : '');
+    span.textContent = `${m.emoji} ${m.label}`;
+    span.title = `${fmt(m.threshold)} cookies`;
+    milestonesEl.appendChild(span);
+  }
+}
+
+// ── Prestige ───────────────────────────────────────────────────
+prestigeBtn.addEventListener('click', () => {
+  if (state.cookies < PRESTIGE_THRESHOLD) return;
+  state.prestige += 1;
+  state.mult = 1 + state.prestige * 0.5;
+  state.cookies = 0;
+  state.upgrades = Object.fromEntries(UPGRADES.map(u => [u.id, 0]));
+  toast(`✨ Prestige ${state.prestige}! Multiplier ×${state.mult.toFixed(1)}`);
+  updateUI();
+});
+
+// ── UI update ──────────────────────────────────────────────────
+function updateUI() {
+  const cps = getCps();
+  cookieCountEl.textContent = fmt(state.cookies);
+  cpsEl.textContent = fmt(cps);
+  prestigeCountEl.textContent = state.prestige;
+  multDisplayEl.textContent   = '×' + state.mult.toFixed(1);
+
+  const canPrestige = state.cookies >= PRESTIGE_THRESHOLD;
+  prestigeBtn.disabled = !canPrestige;
+  prestigeInfo.textContent = canPrestige
+    ? `Reset for ×${(state.mult + 0.5).toFixed(1)} multiplier!`
+    : `Reach ${fmt(PRESTIGE_THRESHOLD)} cookies to prestige`;
+
+  buildUpgrades();
+  updateMilestones();
+  saveState();
+}
+
+// ── Tick ───────────────────────────────────────────────────────
+let last = performance.now();
+function tick(now) {
+  const dt = (now - last) / 1000;
+  last = now;
+  const cps = getCps();
+  if (cps > 0) {
+    state.cookies += cps * dt;
+    state.totalEver += cps * dt;
+    cookieCountEl.textContent = fmt(state.cookies);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+// ── Stars ──────────────────────────────────────────────────────
+function makeStars() {
+  const container = document.getElementById('stars');
+  for (let i = 0; i < 120; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    s.style.cssText = `
+      width:${size}px;height:${size}px;
+      top:${Math.random()*100}%;left:${Math.random()*100}%;
+      --d:${2+Math.random()*4}s;
+      animation-delay:${Math.random()*4}s;
+    `;
+    container.appendChild(s);
+  }
+}
+
+// ── Auto-save every 10s ────────────────────────────────────────
+setInterval(saveState, 10000);
+
+// ── Boot ───────────────────────────────────────────────────────
+makeStars();
+loadState();
+updateUI();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

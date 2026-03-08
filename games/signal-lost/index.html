@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Signal Lost — IdleRush</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020408;--bg2:#030610;--surface:#060d1a;--surface2:#091525;
+  --border:rgba(0,180,255,0.08);--border2:rgba(0,180,255,0.2);
+  --text:#b8d4e8;--muted:#3a6080;--dim:#1e3a50;
+  --cyan:#00d4ff;--blue:#4db8ff;--green:#00ff88;--red:#ff4466;--amber:#ffb830;
+  --font-d:'Syne',sans-serif;--font-m:'Share Tech Mono',monospace;--font-b:'Mulish',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* SCANLINE */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,212,255,0.015) 2px,rgba(0,212,255,0.015) 4px);pointer-events:none;z-index:99}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 100% 70% at 50% 0%,rgba(0,100,200,0.06),transparent 60%);pointer-events:none;z-index:0}
+
+header{position:relative;z-index:2;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(2,4,8,0.92);backdrop-filter:blur(12px);flex-shrink:0}
+.logo{font-family:var(--font-d);font-size:20px;font-weight:800;letter-spacing:0.04em}
+.logo span{color:var(--cyan)}
+.back{font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 10px;transition:color .15s}
+.back:hover{color:var(--text)}
+.signal-strength{display:flex;align-items:center;gap:8px;font-family:var(--font-m);font-size:12px;color:var(--cyan)}
+.signal-bars{display:flex;gap:3px;align-items:flex-end}
+.signal-bar{width:5px;background:var(--dim);border-radius:1px;transition:background .3s}
+.signal-bar.lit{background:var(--cyan)}
+.signal-bar:nth-child(1){height:6px}
+.signal-bar:nth-child(2){height:10px}
+.signal-bar:nth-child(3){height:14px}
+.signal-bar:nth-child(4){height:18px}
+.signal-bar:nth-child(5){height:22px}
+
+main{flex:1;display:grid;grid-template-columns:1fr 320px;overflow:hidden;position:relative;z-index:1}
+
+/* TRANSMITTER AREA */
+.transmitter-area{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px;overflow:hidden;position:relative}
+
+/* RADAR */
+.radar-wrap{position:relative;width:240px;height:240px}
+canvas#radar{border-radius:50%;border:1px solid rgba(0,212,255,0.2);box-shadow:0 0 30px rgba(0,212,255,0.08),0 0 60px rgba(0,212,255,0.04)}
+.radar-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-m);font-size:11px;color:var(--cyan);text-align:center;line-height:1.6;pointer-events:none}
+.radar-label span{display:block;font-size:18px}
+
+.boost-btn{width:240px;padding:14px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:12px;color:var(--cyan);font-family:var(--font-d);font-size:18px;letter-spacing:0.06em;transition:all .15s}
+.boost-btn:active{background:rgba(0,212,255,0.15);transform:scale(0.97)}
+.boost-btn:hover{background:rgba(0,212,255,0.1);box-shadow:0 0 16px rgba(0,212,255,0.15)}
+
+.stats-row{display:flex;gap:24px;justify-content:center}
+.stat-box{text-align:center}
+.stat-val{font-family:var(--font-m);font-size:20px;color:var(--cyan);line-height:1}
+.stat-label{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.08em}
+
+.freq-bar-wrap{width:100%;max-width:380px}
+.freq-header{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:var(--font-m)}
+.freq-bar{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;position:relative}
+.freq-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:5px;transition:width .4s ease}
+.freq-tick{position:absolute;top:0;height:100%;width:2px;background:rgba(255,255,255,0.3);transition:left .3s}
+
+/* PANEL */
+.panel{border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border)}
+.panel-tab{flex:1;padding:11px 6px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:0.06em;transition:color .15s,border-color .15s}
+.panel-tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.panel-content{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.panel-content::-webkit-scrollbar{width:3px}
+.panel-content::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+/* UPGRADE */
+.upg-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px;display:flex;gap:10px;align-items:flex-start;transition:border-color .15s}
+.upg-card:not(.locked):not(.maxed):hover{border-color:var(--border2);cursor:pointer;background:rgba(0,212,255,0.03)}
+.upg-card.locked{opacity:0.35;cursor:not-allowed}
+.upg-card.maxed{border-color:rgba(0,212,255,0.18);background:rgba(0,212,255,0.03)}
+.upg-icon{font-size:26px;flex-shrink:0;width:34px;text-align:center}
+.upg-info{flex:1;min-width:0}
+.upg-name{font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:5px}
+.upg-lvl{font-size:10px;color:var(--cyan);background:rgba(0,212,255,0.1);padding:1px 5px;border-radius:3px;font-family:var(--font-m)}
+.upg-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.upg-cost{font-family:var(--font-m);font-size:12px;color:var(--amber);flex-shrink:0;white-space:nowrap}
+
+/* LOG */
+.log-entry{padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;position:relative;overflow:hidden}
+.log-entry.unread{border-left:3px solid var(--cyan)}
+.log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.log-freq{font-family:var(--font-m);font-size:11px;color:var(--cyan)}
+.log-time{font-size:10px;color:var(--dim)}
+.log-text{font-size:12px;color:var(--muted);line-height:1.55;font-family:var(--font-m)}
+.log-text.revealed{color:var(--text)}
+
+.prestige-wrap{padding:12px;border-top:1px solid var(--border);flex-shrink:0}
+.prestige-btn{width:100%;padding:11px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,100,200,0.06));border:1px solid rgba(0,212,255,0.2);border-radius:10px;color:var(--cyan);font-family:var(--font-d);font-size:15px;letter-spacing:0.06em;transition:all .15s}
+.prestige-btn:hover:not(:disabled){box-shadow:0 0 16px rgba(0,212,255,0.15);background:rgba(0,212,255,0.16)}
+.prestige-btn:disabled{opacity:0.3;cursor:not-allowed}
+.prestige-info{font-size:11px;color:var(--dim);text-align:center;margin-top:6px;font-family:var(--font-m)}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--cyan);color:var(--text);padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;z-index:200;animation:toastAnim 2.5s ease forwards;pointer-events:none;font-family:var(--font-m)}
+@keyframes toastAnim{0%{opacity:0;transform:translateX(-50%) translateY(8px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+
+@media(max-width:640px){main{grid-template-columns:1fr;grid-template-rows:1fr 48vh}html,body{overflow:auto}.panel{border-left:none;border-top:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<header>
+  <a href="../../index.html" class="back">← IdleRush</a>
+  <div class="logo">SIGNAL <span>LOST</span></div>
+  <div class="signal-strength">
+    <div class="signal-bars">
+      <div class="signal-bar" id="sb1"></div>
+      <div class="signal-bar" id="sb2"></div>
+      <div class="signal-bar" id="sb3"></div>
+      <div class="signal-bar" id="sb4"></div>
+      <div class="signal-bar" id="sb5"></div>
+    </div>
+    <span id="sigStrengthLabel">0 dBm</span>
+  </div>
+</header>
+<main>
+  <div class="transmitter-area">
+    <div class="radar-wrap">
+      <canvas id="radar" width="240" height="240"></canvas>
+      <div class="radar-label"><span id="radarEmoji">📡</span><div id="radarStatus">SCANNING…</div></div>
+    </div>
+
+    <button class="boost-btn" id="boostBtn">⚡ BOOST SIGNAL</button>
+
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val" id="sigDisplay">0</div><div class="stat-label">Signal</div></div>
+      <div class="stat-box"><div class="stat-val" id="idleDisplay">0/s</div><div class="stat-label">Auto Scan</div></div>
+      <div class="stat-box"><div class="stat-val" id="contactDisplay">0</div><div class="stat-label">Contacts</div></div>
+    </div>
+
+    <div class="freq-bar-wrap">
+      <div class="freq-header"><span>FREQUENCY LOCK</span><span id="freqVal">0 / 1000 Hz</span></div>
+      <div class="freq-bar">
+        <div class="freq-fill" id="freqFill" style="width:0%"></div>
+        <div class="freq-tick" id="freqTick" style="left:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-tabs">
+      <button class="panel-tab active" data-tab="upgrades">Equipment</button>
+      <button class="panel-tab" data-tab="log">Transmissions</button>
+    </div>
+    <div class="panel-content" id="panelContent"></div>
+    <div class="prestige-wrap">
+      <button class="prestige-btn" id="prestigeBtn" disabled>📡 NEW FREQUENCY</button>
+      <div class="prestige-info" id="prestigeInfo">Lock 1000 Hz to open a new channel</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const SAVE='signallost_v1';
+
+const UPGRADES=[
+  {id:'antenna',name:'Antenna Gain',icon:'📡',desc:'Boosts each manual click',baseCost:30,baseVal:2,mult:1.4,max:20},
+  {id:'amp',name:'Signal Amplifier',icon:'🔊',desc:'Increases auto scan rate',baseCost:80,baseVal:0.3,mult:1.45,max:15},
+  {id:'filter',name:'Noise Filter',icon:'📻',desc:'Cuts interference, more signal',baseCost:300,baseVal:0.8,mult:1.5,max:12},
+  {id:'dish',name:'Dish Array',icon:'🛰️',desc:'Powerful array of receivers',baseCost:1200,baseVal:2.5,mult:1.55,max:10},
+  {id:'reactor',name:'Reactor Core',icon:'⚛️',desc:'Powers all systems',baseCost:5000,baseVal:8,mult:1.6,max:8},
+  {id:'quantum',name:'Quantum Tuner',icon:'🌀',desc:'Tunes to quantum frequencies',baseCost:20000,baseVal:25,mult:1.65,max:6},
+];
+
+const TRANSMISSIONS=[
+  {freq:1000,text:"Static. Then: '...survivors on deck seven...'"},
+  {freq:3000,text:"A child's voice, repeating coordinates. You write them down."},
+  {freq:7000,text:"'Oxygen recyclers offline. Day 47.' The timestamp is months ago."},
+  {freq:15000,text:"Ground control responds. They thought everyone was dead."},
+  {freq:30000,text:"The captain's log. The accident wasn't an accident."},
+  {freq:60000,text:"Earth picks up your signal. A rescue ship is en route. 6 months."},
+  {freq:120000,text:"You decode the last black box. You understand now. You were the only one awake."},
+];
+
+let state={
+  signal:0,totalSignal:0,prestige:0,contacts:0,
+  upgrades:Object.fromEntries(UPGRADES.map(u=>[u.id,0])),
+  unlockedTransmissions:[],
+  mult:1,freqLock:0,
+};
+let activeTab='upgrades';
+
+function load(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s)state={...state,...s}}catch{}}
+function save(){localStorage.setItem(SAVE,JSON.stringify(state))}
+
+function getClickVal(){return(1+((state.upgrades['antenna']||0)*2))*state.mult}
+function getAutoRate(){
+  let r=0;
+  for(const u of UPGRADES){const l=state.upgrades[u.id]||0;if(l>0)r+=l*u.baseVal*state.mult}
+  r-=(state.upgrades['antenna']||0)*2*state.mult; // subtract click-only
+  return Math.max(0,r);
+}
+function getUpgCost(u){return Math.floor(u.baseCost*Math.pow(u.mult,state.upgrades[u.id]||0))}
+
+// RADAR
+const canvas=document.getElementById('radar');
+const ctx=canvas.getContext('2d');
+let radarAngle=0;
+let contacts2d=[];
+
+function drawRadar(){
+  ctx.clearRect(0,0,240,240);
+  const cx=120,cy=120;
+
+  // background
+  ctx.beginPath();ctx.arc(cx,cy,119,0,Math.PI*2);
+  ctx.fillStyle='#020810';ctx.fill();
+
+  // grid rings
+  for(let r=30;r<=119;r+=30){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,212,255,0.08)';ctx.lineWidth=1;ctx.stroke();
+  }
+  // crosshairs
+  ctx.strokeStyle='rgba(0,212,255,0.06)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx,cy-119);ctx.lineTo(cx,cy+119);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx-119,cy);ctx.lineTo(cx+119,cy);ctx.stroke();
+
+  // sweep
+  const gradient=ctx.createConicalGradient?null:null;
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.arc(cx,cy,119,radarAngle-0.6,radarAngle);
+  ctx.closePath();
+  ctx.fillStyle='rgba(0,212,255,0.12)';ctx.fill();
+
+  // sweep line
+  ctx.beginPath();ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+Math.cos(radarAngle)*119,cy+Math.sin(radarAngle)*119);
+  ctx.strokeStyle='rgba(0,212,255,0.7)';ctx.lineWidth=1.5;ctx.stroke();
+
+  // blips
+  for(const c of contacts2d){
+    const age=(Date.now()-c.born)/3000;
+    if(age>1)continue;
+    ctx.beginPath();ctx.arc(cx+c.x,cy+c.y,3,0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,255,180,${1-age})`;ctx.fill();
+    ctx.beginPath();ctx.arc(cx+c.x,cy+c.y,6,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(0,255,180,${0.4*(1-age)})`;ctx.lineWidth=1;ctx.stroke();
+  }
+
+  radarAngle+=0.025;
+  if(radarAngle>Math.PI*2)radarAngle=0;
+  if(Math.random()<0.02){
+    contacts2d.push({x:(Math.random()-0.5)*200,y:(Math.random()-0.5)*200,born:Date.now()});
+    if(contacts2d.length>20)contacts2d.shift();
+  }
+}
+
+setInterval(drawRadar,33);
+
+document.getElementById('boostBtn').addEventListener('click',()=>{
+  const val=getClickVal();
+  state.signal+=val;state.totalSignal+=val;
+  state.freqLock=Math.min(state.freqLock+val*0.5,getThreshold());
+  checkTransmissions();
+  updateUI();
+});
+
+function getThreshold(){return 1000*Math.pow(3,state.prestige)}
+
+function checkTransmissions(){
+  for(const t of TRANSMISSIONS){
+    const needed=t.freq*Math.pow(3,state.prestige);
+    if(state.totalSignal>=needed&&!state.unlockedTransmissions.includes(t.freq)){
+      state.unlockedTransmissions.push(t.freq);
+      state.contacts++;
+      toast('📡 New transmission received!');
+      if(activeTab==='log')renderLog();
+    }
+  }
+}
+
+function fmt(n){
+  if(n>=1e9)return(n/1e9).toFixed(2)+'G';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return Math.floor(n).toLocaleString();
+}
+
+function updateSigBars(){
+  const pct=state.freqLock/getThreshold();
+  const lit=Math.ceil(pct*5);
+  for(let i=1;i<=5;i++)document.getElementById('sb'+i).classList.toggle('lit',i<=lit);
+  document.getElementById('sigStrengthLabel').textContent=Math.round(pct*100)+'%';
+}
+
+function updateUI(){
+  document.getElementById('sigDisplay').textContent=fmt(state.signal);
+  document.getElementById('idleDisplay').textContent=fmt(getAutoRate())+'/s';
+  document.getElementById('contactDisplay').textContent=state.contacts;
+  const thr=getThreshold();
+  document.getElementById('freqVal').textContent=fmt(state.freqLock)+' / '+fmt(thr)+' Hz';
+  document.getElementById('freqFill').style.width=Math.min(100,(state.freqLock/thr)*100)+'%';
+  const pct=state.freqLock/thr;
+  document.getElementById('freqTick').style.left=Math.min(98,pct*100)+'%';
+  document.getElementById('radarStatus').textContent=pct<0.5?'SCANNING…':pct<1?'SIGNAL FOUND':'LOCKED ON';
+  updateSigBars();
+  const canPrestige=state.freqLock>=thr;
+  document.getElementById('prestigeBtn').disabled=!canPrestige;
+  document.getElementById('prestigeInfo').textContent=canPrestige?'Open a new transmission channel!':'Lock '+fmt(thr)+' Hz to open new channel';
+  if(activeTab==='upgrades')renderUpgrades();
+  save();
+}
+
+function renderUpgrades(){
+  const panel=document.getElementById('panelContent');
+  panel.innerHTML='';
+  for(const u of UPGRADES){
+    const lvl=state.upgrades[u.id]||0;
+    const cost=getUpgCost(u);
+    const maxed=lvl>=u.max;
+    const locked=!maxed&&state.signal<cost;
+    const div=document.createElement('div');
+    div.className='upg-card'+(maxed?' maxed':locked?' locked':'');
+    div.innerHTML=`<div class="upg-icon">${u.icon}</div><div class="upg-info"><div class="upg-name">${u.name}${lvl>0?`<span class="upg-lvl">LV${lvl}</span>`:''}</div><div class="upg-desc">${u.desc}</div></div><div class="upg-cost">${maxed?'MAX':'📡 '+fmt(cost)}</div>`;
+    if(!maxed&&!locked)div.addEventListener('click',()=>{
+      const c=getUpgCost(u);if(state.signal<c)return;
+      state.signal-=c;state.upgrades[u.id]=(state.upgrades[u.id]||0)+1;
+      toast(u.icon+' '+u.name+' upgraded!');updateUI();
+    });
+    panel.appendChild(div);
+  }
+}
+
+function renderLog(){
+  const panel=document.getElementById('panelContent');
+  panel.innerHTML='';
+  if(state.unlockedTransmissions.length===0){
+    panel.innerHTML='<div style="font-size:12px;color:var(--dim);padding:16px;text-align:center;font-family:var(--font-m)">No transmissions received yet.<br>Boost your signal to make contact.</div>';
+    return;
+  }
+  const unlocked=[...state.unlockedTransmissions].reverse();
+  for(const freq of unlocked){
+    const t=TRANSMISSIONS.find(x=>x.freq===freq);
+    if(!t)continue;
+    const div=document.createElement('div');div.className='log-entry';
+    div.innerHTML=`<div class="log-header"><span class="log-freq">FREQ ${freq} Hz</span><span class="log-time">RECEIVED</span></div><div class="log-text revealed">${t.text}</div>`;
+    panel.appendChild(div);
+  }
+  const remaining=TRANSMISSIONS.filter(t=>!state.unlockedTransmissions.includes(t.freq));
+  for(const t of remaining.slice(0,2)){
+    const div=document.createElement('div');div.className='log-entry';
+    div.innerHTML=`<div class="log-header"><span class="log-freq">FREQ ??? Hz</span><span class="log-time">ENCRYPTED</span></div><div class="log-text">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ — boost signal to decode</div>`;
+    panel.appendChild(div);
+  }
+}
+
+document.getElementById('prestigeBtn').addEventListener('click',()=>{
+  state.prestige+=1;state.mult=1+state.prestige*0.4;
+  state.signal=0;state.freqLock=0;
+  state.upgrades=Object.fromEntries(UPGRADES.map(u=>[u.id,0]));
+  toast('📡 New frequency channel opened! Run '+(state.prestige+1));
+  updateUI();
+  activeTab='upgrades';document.querySelectorAll('.panel-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  renderUpgrades();
+});
+
+document.querySelectorAll('.panel-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.panel-tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');activeTab=t.dataset.tab;
+    if(activeTab==='upgrades')renderUpgrades();else renderLog();
+  });
+});
+
+function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove())}
+
+let last=performance.now();
+function tick(now){
+  const dt=(now-last)/1000;last=now;
+  const rate=getAutoRate();
+  if(rate>0){
+    state.signal+=rate*dt;state.totalSignal+=rate*dt;
+    state.freqLock=Math.min(state.freqLock+rate*dt*0.5,getThreshold());
+    checkTransmissions();
+    document.getElementById('sigDisplay').textContent=fmt(state.signal);
+  }
+  requestAnimationFrame(tick);
+}
+
+load();updateUI();renderUpgrades();requestAnimationFrame(tick);setInterval(save,10000);
+</script>
+</body>
+</html>
